@@ -108,6 +108,7 @@ def plot_4_metrics_details(data_inOneRow:int,
                                ={"pressure":["Elapsed time","Data","first_order_derivative","second_order_derivative"],
                                 "rate":["Elapsed time","Liquid rate"]})->None:
     
+    print(f"detected {len(breakpoints_detected)} points as breakpoints")
     pressure_time, pressure_measure,first_order_derivative,second_order_derivative=colum_names["pressure"]
     rate_time, rate_measure = colum_names["rate"]
     
@@ -120,11 +121,12 @@ def plot_4_metrics_details(data_inOneRow:int,
 
     for i,(sub_pressure_df,sub_breakpoints, sub_ground_truth) in enumerate(zip(grouped_pressure_df,grouped_breakpoints,grouped_gound_truth)):
         #print
-        if len(grouped_gound_truth)==0:
+        if len(ground_truth)==0:
             print(f"------row {i+1}-----detected points:{sub_breakpoints}")
-        if len(grouped_gound_truth)!=0:
-            print(f"------row {i+1}-----faulty points:{[point for point in sub_breakpoints if point not in sub_ground_truth]}")
-            print(f"------row {i+1}-----missed points:{[point for point in sub_ground_truth if point not in sub_breakpoints]}")  
+        if len(ground_truth)!=0:
+            print(f"------row {i+1}-----correctly detected points:{[point for point in sub_breakpoints if point in sub_ground_truth]}")
+            print(f"------row {i+1}-----faulty detected points:{[point for point in sub_breakpoints if point not in sub_ground_truth]}")
+            print(f"------row {i+1}-----missed breakpoints:{[point for point in sub_ground_truth if point not in sub_breakpoints]}")  
 
         # count_breakpoints+=len(sub_breakpoints)   
         #extract rate data for subplot     
@@ -168,3 +170,14 @@ def plot_detection_statistics(breakpoints_detected:List[int],ground_truth:List[i
     plt.title("")
     plt.show()
     return None
+
+def plot_histogram(data, xlabel:str, ylabel:str,title:str)->None:
+    number_bins=300
+    # plt.style.use('ggplot')
+    plt.hist(data, bins=number_bins)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    # plt.legend(legend)
+    plt.title(title)
+    plt.show
+    

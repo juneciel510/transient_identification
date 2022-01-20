@@ -60,10 +60,11 @@ def detect_breakpoints_3(first_order_derivative,second_order_derivative):
     return breakpoints
 
 
-def detect_breakpoints_all(first_order_derivative):
+def detect_breakpoints_startPoint(first_order_derivative,noise_threshold=2.5):
     breakpoints=[]
     std=statistics.stdev(first_order_derivative)
     for i in range(len(first_order_derivative)):
-        if first_order_derivative[i]>2.5*std:
+        if abs(first_order_derivative[i])>noise_threshold*std:
             breakpoints.append(i+1)
     return breakpoints
+
