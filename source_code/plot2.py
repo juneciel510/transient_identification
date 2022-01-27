@@ -23,6 +23,54 @@ def group_index(data, bin_start, bin_end, bin_step):
 # group_index(breakpoints_detected, 0, len(pressure_df[pressure_time]), N)
 
 
+# def plot_breakpoints(ax,ax_index,breakpoints_detected,ground_truth,pressure_df,pressure_time)->None:
+    
+#     # vline_color="cyan"
+#     vline_color="dodgerblue"
+#     color_breakpoints_missed="gold"
+#     color_breakpoints_faultyDetected="fuchsia"
+      
+#     #if ground truth not given, just plot detected points       
+#     if len(ground_truth)==0:
+#         for breakpoint in breakpoints_detected: 
+#             #specify the index of points in the second plot
+#             if ax_index==1:
+#                 # ax.text(pressure_df[pressure_time][breakpoint], .5, f'{breakpoint}', rotation=70)
+#                 ax.axvline(x=pressure_df[pressure_time][breakpoint],color=vline_color)
+#             else:
+#                 ax.axvline(x=pressure_df[pressure_time][breakpoint],color=vline_color)
+    
+#     #if ground truth is given, plot missed points, faulty detected points as well           
+#     if len(ground_truth)>0:  
+#         breakpoints_faultyDetected=[point for point in breakpoints_detected if point not in ground_truth]
+#         breakpoints_missed=[point for point in ground_truth if point not in breakpoints_detected]
+#         all_breakpoints=set(breakpoints_detected+ground_truth)
+#         breakpoints_correct=[point for point in breakpoints_detected if point in ground_truth]
+        
+#         # for point in all_breakpoints:     
+#         #     if point in breakpoints_faultyDetected:
+#         #         ax.axvline(x=pressure_df[pressure_time][point],color=color_breakpoints_faultyDetected)
+#         #     elif point in breakpoints_missed:
+#         #         ax.axvline(x=pressure_df[pressure_time][point],color=color_breakpoints_missed)     
+#         #     else:
+#         #         ax.axvline(x=pressure_df[pressure_time][point],color=vline_color)
+        
+#         breakpoints_faultyDetected_time=[pressure_df[pressure_time][point] for point in breakpoints_faultyDetected]
+#         print(breakpoints_faultyDetected_time)
+#         ax.vlines(x=breakpoints_faultyDetected_time,color=color_breakpoints_faultyDetected,label='Points faulty')
+
+#         breakpoints_missed_time=[pressure_df[pressure_time][point] for point in breakpoints_missed]
+#         ax.vlines(x=breakpoints_missed_time,color=color_breakpoints_missed,label='Points missed')     
+       
+#         breakpoints_correct_time=[pressure_df[pressure_time][point] for point in breakpoints_correct]
+#         ax.vlines(x=breakpoints_correct_time,color=vline_color,label='Points correct')
+        
+#         legend = ax.legend(loc='upper left', shadow=True, fontsize='large')
+        
+        
+                
+#     return None
+
 def plot_breakpoints(ax,ax_index,breakpoints_detected,ground_truth,pressure_df,pressure_time)->None:
     
     # vline_color="cyan"
@@ -36,23 +84,32 @@ def plot_breakpoints(ax,ax_index,breakpoints_detected,ground_truth,pressure_df,p
             #specify the index of points in the second plot
             if ax_index==1:
                 # ax.text(pressure_df[pressure_time][breakpoint], .5, f'{breakpoint}', rotation=70)
-                ax.axvline(x=pressure_df[pressure_time][breakpoint],color=vline_color)
+                ax.axvline(x=pressure_df[pressure_time][breakpoint],color=vline_color,label='Points detected')
             else:
-                ax.axvline(x=pressure_df[pressure_time][breakpoint],color=vline_color)
+                ax.axvline(x=pressure_df[pressure_time][breakpoint],color=vline_color,label='Points detected')
     
     #if ground truth is given, plot missed points, faulty detected points as well           
     if len(ground_truth)>0:  
         breakpoints_faultyDetected=[point for point in breakpoints_detected if point not in ground_truth]
         breakpoints_missed=[point for point in ground_truth if point not in breakpoints_detected]
         all_breakpoints=set(breakpoints_detected+ground_truth)
+        # breakpoints_correct=[point for point in breakpoints_detected if point in ground_truth]
         
         for point in all_breakpoints:     
             if point in breakpoints_faultyDetected:
-                ax.axvline(x=pressure_df[pressure_time][point],color=color_breakpoints_faultyDetected)
+                ax.axvline(x=pressure_df[pressure_time][point],color=color_breakpoints_faultyDetected,label='Points faulty')
             elif point in breakpoints_missed:
-                ax.axvline(x=pressure_df[pressure_time][point],color=color_breakpoints_missed)     
+                ax.axvline(x=pressure_df[pressure_time][point],color=color_breakpoints_missed,label='Points missed')     
             else:
-                ax.axvline(x=pressure_df[pressure_time][point],color=vline_color)
+                ax.axvline(x=pressure_df[pressure_time][point],color=vline_color,label='Points correct')
+        
+    #many labels are produce, just lengend unique ones        
+    handles, labels = ax.get_legend_handles_labels()
+    labels, ids = np.unique(labels, return_index=True)
+    handles = [handles[i] for i in ids]
+    ax.legend(handles, labels, loc='best',shadow=True, fontsize='large')
+        
+        
                 
     return None
  
@@ -71,7 +128,7 @@ def plot_4_metrics(pressure_df:pd.DataFrame,
     
     plt.close('all')
     rcParams.update({'figure.autolayout': True})
-    fig, axs = plt.subplots(nrows=4, sharex=True, dpi=100,figsize=(20,15), gridspec_kw={'height_ratios': [5, 3,3,3]})
+    fig, axs = plt.subplots(nrows=4, sharex=True, dpi=100,figsize=(20,13), gridspec_kw={'height_ratios': [3, 3,3,3]})
     fig.suptitle('pressure ~ rate ~ first derivative ~ second derivative', 
               **{'family': 'Arial Black', 'size': 22, 'weight': 'bold'},x=0.5, y=1.005)
     
@@ -87,11 +144,14 @@ def plot_4_metrics(pressure_df:pd.DataFrame,
     scatter_colors=['red','green','orangered','limegreen']
     scatter_sizes=[4**2,6**2,5**2,5**2]   
     y_labels=[pressure_measure,rate_measure,first_order_derivative,second_order_derivative]
+    hline_color="purple"
     
     for i,(ax, x,y,color,size,y_label) in enumerate(zip(axs, x_coordinates,y_coordinates,scatter_colors,scatter_sizes,y_labels)):
         ax.scatter(x=x,y=y,color=color,s=size) 
         ax.set_ylabel(y_label,fontsize=16) 
         plot_breakpoints(ax,i,breakpoints_detected,ground_truth,pressure_df,pressure_time)
+        if i==1:
+            ax.axhline(y=0,color=hline_color)
     
 
     fig.subplots_adjust(bottom=0.1, top=0.9)
@@ -122,11 +182,18 @@ def plot_4_metrics_details(data_inOneRow:int,
     for i,(sub_pressure_df,sub_breakpoints, sub_ground_truth) in enumerate(zip(grouped_pressure_df,grouped_breakpoints,grouped_gound_truth)):
         #print
         if len(ground_truth)==0:
+            sub_breakpoints.sort()
             print(f"------row {i+1}-----detected points:{sub_breakpoints}")
         if len(ground_truth)!=0:
-            print(f"------row {i+1}-----correctly detected points:{[point for point in sub_breakpoints if point in sub_ground_truth]}")
-            print(f"------row {i+1}-----faulty detected points:{[point for point in sub_breakpoints if point not in sub_ground_truth]}")
-            print(f"------row {i+1}-----missed breakpoints:{[point for point in sub_ground_truth if point not in sub_breakpoints]}")  
+            points_correct=[point for point in sub_breakpoints if point in sub_ground_truth]
+            points_correct.sort()
+            points_falty=[point for point in sub_breakpoints if point not in sub_ground_truth]
+            points_falty.sort()
+            points_missed=[point for point in sub_ground_truth if point not in sub_breakpoints]
+            points_missed.sort()
+            print(f"------row {i+1}-----correctly detected points:{points_correct}")
+            print(f"------row {i+1}-----faulty detected points:{points_falty}")
+            print(f"------row {i+1}-----missed breakpoints:{points_missed}")  
 
         # count_breakpoints+=len(sub_breakpoints)   
         #extract rate data for subplot     

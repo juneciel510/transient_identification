@@ -51,3 +51,19 @@ def convert_timestamp2hour(start_timestamp:pd._libs.tslibs.timestamps.Timestamp,
     for i in range(len(timestamps)-1):
         hours[i+1]=(timestamps[i+1]-start_timestamp).total_seconds()/3600
     return hours
+
+def produce_pressure_4metrics(pressure_df:pd.DataFrame,colum_names:Dict[str,List[str]])->pd.DataFrame:
+    pressure_time, pressure_measure,first_order_derivative,second_order_derivative=colum_names["pressure"]
+    x_coordinate=pressure_df[pressure_time]
+    first_order_derivative=calculate_derivative(x_coordinate,pressure_df[pressure_measure])
+    second_order_derivative=calculate_derivative(x_coordinate,first_order_derivative)
+
+    #add first and second derivative to pressure_df dataframe
+    pressure_df["first_order_derivative"]=first_order_derivative
+    pressure_df["second_order_derivative"]=second_order_derivative
+    # pd.set_option('display.max_rows', pressure_df.shape[0]+1)
+    return pressure_df
+    
+
+# class data_preprocessing:
+    
