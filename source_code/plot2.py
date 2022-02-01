@@ -16,6 +16,51 @@ def group_index(data, bin_start, bin_end, bin_step):
                                     x < bin_edges[i+1])
     return [list(x[cond[:, i]]) for i in range(bin_number)]
 
+def detected_points_categories_2(breakpoints_detected:List[int],
+                               ground_truth:List[int]):
+        '''
+        Classify the detected points into 3 categories: points correct, points faulty, points missed.
+        
+        if the detected point is 10 points ahead or behind the true breakpoint,
+        we think that point is correctly detected.
+        Since sometimes smoothing may cause deviation of breakpoints.
+        Args:
+        Returns:
+        '''
+    
+        
+        points_faulty=breakpoints_detected.copy()
+        points_missed=ground_truth.copy()
+        points_correct=[]
+        for point_detected in breakpoints_detected:
+            for point_true in ground_truth:
+                if abs(point_true-point_detected)<=10:
+                    points_correct.append(point_detected)
+                    points_faulty.remove(point_detected)
+                    points_missed.remove(point_true)              
+                    break
+        
+        points_correct.sort()
+        points_faulty.sort()
+        points_missed.sort()
+        return points_correct,points_faulty, points_missed
+    
+def detected_points_categories(breakpoints_detected:List[int],
+                               ground_truth:List[int]):
+    '''
+
+    '''
+    
+                    
+    points_correct=[point for point in breakpoints_detected if point in ground_truth]
+    points_correct.sort()
+    points_faulty=[point for point in breakpoints_detected if point not in ground_truth]
+    points_faulty.sort()
+    points_missed=[point for point in ground_truth if point not in breakpoints_detected]
+    points_missed.sort()
+ 
+    return points_correct,points_faulty, points_missed
+    
 # data=breakpoints_detected 
 # bin_start=0
 # bin_end=len(pressure_df[pressure_time])
@@ -90,10 +135,8 @@ def plot_breakpoints(ax,ax_index,breakpoints_detected,ground_truth,pressure_df,p
     
     #if ground truth is given, plot missed points, faulty detected points as well           
     if len(ground_truth)>0:  
-        breakpoints_faultyDetected=[point for point in breakpoints_detected if point not in ground_truth]
-        breakpoints_missed=[point for point in ground_truth if point not in breakpoints_detected]
+        breakpoints_correct,breakpoints_faultyDetected,breakpoints_missed=detected_points_categories_2(breakpoints_detected,ground_truth)
         all_breakpoints=set(breakpoints_detected+ground_truth)
-        # breakpoints_correct=[point for point in breakpoints_detected if point in ground_truth]
         
         for point in all_breakpoints:     
             if point in breakpoints_faultyDetected:
@@ -155,6 +198,7 @@ def plot_4_metrics(pressure_df:pd.DataFrame,
     
 
     fig.subplots_adjust(bottom=0.1, top=0.9)
+    plt.savefig('books_read.png')
     plt.show()       
     return None
   
@@ -185,14 +229,9 @@ def plot_4_metrics_details(data_inOneRow:int,
             sub_breakpoints.sort()
             print(f"------row {i+1}-----detected points:{sub_breakpoints}")
         if len(ground_truth)!=0:
-            points_correct=[point for point in sub_breakpoints if point in sub_ground_truth]
-            points_correct.sort()
-            points_falty=[point for point in sub_breakpoints if point not in sub_ground_truth]
-            points_falty.sort()
-            points_missed=[point for point in sub_ground_truth if point not in sub_breakpoints]
-            points_missed.sort()
+            points_correct,points_faulty,points_missed=detected_points_categories_2(sub_breakpoints,sub_ground_truth)
             print(f"------row {i+1}-----correctly detected points:{points_correct}")
-            print(f"------row {i+1}-----faulty detected points:{points_falty}")
+            print(f"------row {i+1}-----faulty detected points:{points_faulty}")
             print(f"------row {i+1}-----missed breakpoints:{points_missed}")  
 
         # count_breakpoints+=len(sub_breakpoints)   
@@ -211,12 +250,14 @@ def plot_4_metrics_details(data_inOneRow:int,
 
 def plot_detection_statistics(breakpoints_detected:List[int],ground_truth:List[int])->None:
     if len(ground_truth)==0:
+        print("No ground truth defined")
         return None
-    breakpoints_faultyDetected=[point for point in breakpoints_detected if point not in ground_truth]
-    breakpoints_correctDetected=[point for point in breakpoints_detected if point in ground_truth]
-    print("breakpoints_faultyDetected",breakpoints_faultyDetected)
-    breakpoints_missed=[point for point in ground_truth if point not in breakpoints_detected]
-    print("breakpoints_missed",breakpoints_missed)
+    
+    breakpoints_correctDetected,breakpoints_faultyDetected,breakpoints_missed=detected_points_categories_2(breakpoints_detected,ground_truth)
+   
+    print("the number of breakpoints_correct",len(breakpoints_correctDetected))
+    print("the number of breakpoints_faulty",len(breakpoints_faultyDetected))
+    print("the number of breakpoints_missed",len(breakpoints_missed))
 
     # creating the dataset for bar plot
     data = {'points correct':round(len(breakpoints_correctDetected)/len(ground_truth) ,3), 

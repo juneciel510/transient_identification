@@ -25,7 +25,7 @@ def detect_breakpoints_2(first_order_derivative,second_order_derivative):
     breakpoints=[]
     std_1=statistics.stdev(first_order_derivative)
     std_2=statistics.stdev(second_order_derivative)
-    print(std_1,std_2)
+    print(f"the std of first_order_derivative is{std_1}\n,the std of second_order_derivative is{std_2}")
     compare_point=first_order_derivative[0]
     for i in range(len(first_order_derivative)-1):
         if (compare_point>0)^(first_order_derivative[i+1]>0):
