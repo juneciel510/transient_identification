@@ -3,6 +3,7 @@ import pandas as pd
 import statistics
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
+from matplotlib.backends.backend_pdf import PdfPages
 from operator import itemgetter
 from typing import Callable, Dict, List, Set, Tuple
 
@@ -161,6 +162,7 @@ def plot_4_metrics(pressure_df:pd.DataFrame,
                    rate_df:pd.DataFrame,
                    breakpoints_detected:List[int],
                    ground_truth:List[int],
+                   plots_toSave:List,
                    colum_names:Dict[str,List[str]]
                    ={"pressure":["Elapsed time","Data","first_order_derivative","second_order_derivative"],
                     "rate":["Elapsed time","Liquid rate"]})->None:
@@ -169,7 +171,7 @@ def plot_4_metrics(pressure_df:pd.DataFrame,
     rate_time, rate_measure = colum_names["rate"]
    
     
-    plt.close('all')
+    # plt.close('all')
     rcParams.update({'figure.autolayout': True})
     fig, axs = plt.subplots(nrows=4, sharex=True, dpi=100,figsize=(20,13), gridspec_kw={'height_ratios': [3, 3,3,3]})
     fig.suptitle('pressure ~ rate ~ first derivative ~ second derivative', 
@@ -198,8 +200,9 @@ def plot_4_metrics(pressure_df:pd.DataFrame,
     
 
     fig.subplots_adjust(bottom=0.1, top=0.9)
-    plt.savefig('books_read.png')
+    plots_toSave.append(fig)
     plt.show()       
+    # plt.close()
     return None
   
   
@@ -208,6 +211,7 @@ def plot_4_metrics_details(data_inOneRow:int,
                            rate_df:pd.DataFrame,
                            breakpoints_detected:List[int],
                            ground_truth:List[int],
+                           filename:str,
                            colum_names:Dict[str,List[str]]
                                ={"pressure":["Elapsed time","Data","first_order_derivative","second_order_derivative"],
                                 "rate":["Elapsed time","Liquid rate"]})->None:
@@ -222,6 +226,8 @@ def plot_4_metrics_details(data_inOneRow:int,
     print(f"The plot is devided into {len(grouped_breakpoints)} rows")
     grouped_gound_truth=group_index(ground_truth, 0, size, data_inOneRow)
     # count_breakpoints=0
+    
+    plots_toSave=[]
 
     for i,(sub_pressure_df,sub_breakpoints, sub_ground_truth) in enumerate(zip(grouped_pressure_df,grouped_breakpoints,grouped_gound_truth)):
         #print
@@ -244,9 +250,30 @@ def plot_4_metrics_details(data_inOneRow:int,
                        sub_rate_df,
                        sub_breakpoints,
                        sub_ground_truth,
+                       plots_toSave,
                        colum_names)
     # print("count_breakpoints",count_breakpoints)
+    print("plots_toSave",plots_toSave)
+    
+    #save multifigs
+    save_multi_plots(filename,plots_toSave)
     return None  
+
+# def save_multi_image(filename):
+#     pp = PdfPages(filename)
+#     fig_nums = plt.get_fignums()
+#     print("fig_nums",fig_nums)
+#     figs = [plt.figure(n) for n in fig_nums]
+#     print("figs",figs)
+#     for fig in figs:
+#         fig.savefig(pp, format='pdf')
+#     pp.close()
+    
+def save_multi_plots(filename,plots_toSave):
+    pp = PdfPages(filename)
+    for fig in plots_toSave:
+        fig.savefig(pp, format='pdf')
+    pp.close()
 
 def plot_detection_statistics(breakpoints_detected:List[int],ground_truth:List[int])->None:
     if len(ground_truth)==0:
