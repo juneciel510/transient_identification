@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import statistics
+import matplotlib as matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from matplotlib.backends.backend_pdf import PdfPages
@@ -147,7 +148,7 @@ def plot_breakpoints(ax,ax_index,breakpoints_detected,ground_truth,pressure_df,p
             else:
                 ax.axvline(x=pressure_df[pressure_time][point],color=vline_color,label='Points correct')
         
-    #many labels are produce, just lengend unique ones        
+    #many labels are produced, just lengend unique ones        
     handles, labels = ax.get_legend_handles_labels()
     labels, ids = np.unique(labels, return_index=True)
     handles = [handles[i] for i in ids]
@@ -162,7 +163,8 @@ def plot_4_metrics(pressure_df:pd.DataFrame,
                    rate_df:pd.DataFrame,
                    breakpoints_detected:List[int],
                    ground_truth:List[int],
-                   plots_toSave:List,
+                   plots_toSave:List[matplotlib.figure.Figure],
+                   plot_name:str,
                    colum_names:Dict[str,List[str]]
                    ={"pressure":["Elapsed time","Data","first_order_derivative","second_order_derivative"],
                     "rate":["Elapsed time","Liquid rate"]})->None:
@@ -174,8 +176,7 @@ def plot_4_metrics(pressure_df:pd.DataFrame,
     # plt.close('all')
     rcParams.update({'figure.autolayout': True})
     fig, axs = plt.subplots(nrows=4, sharex=True, dpi=100,figsize=(20,13), gridspec_kw={'height_ratios': [3, 3,3,3]})
-    fig.suptitle('pressure ~ rate ~ first derivative ~ second derivative', 
-              **{'family': 'Arial Black', 'size': 22, 'weight': 'bold'},x=0.5, y=1.005)
+
     
     x_coordinates=[pressure_df[pressure_time],
                    rate_df[rate_time],
@@ -201,6 +202,8 @@ def plot_4_metrics(pressure_df:pd.DataFrame,
 
     fig.subplots_adjust(bottom=0.1, top=0.9)
     plots_toSave.append(fig)
+    fig.suptitle(f'{plot_name}--Row {len(plots_toSave)}', 
+        **{'family': 'Arial Black', 'size': 22, 'weight': 'bold'},x=0.5, y=0.98)
     plt.show()       
     # plt.close()
     return None
@@ -211,6 +214,7 @@ def plot_4_metrics_details(data_inOneRow:int,
                            rate_df:pd.DataFrame,
                            breakpoints_detected:List[int],
                            ground_truth:List[int],
+                           plot_name:str,
                            filename:str,
                            colum_names:Dict[str,List[str]]
                                ={"pressure":["Elapsed time","Data","first_order_derivative","second_order_derivative"],
@@ -220,13 +224,15 @@ def plot_4_metrics_details(data_inOneRow:int,
     pressure_time, pressure_measure,first_order_derivative,second_order_derivative=colum_names["pressure"]
     rate_time, rate_measure = colum_names["rate"]
     
+    #seperate data into different rows 
     size=len(pressure_df)
     grouped_pressure_df = [pressure_df.iloc[x:x+data_inOneRow,:] for x in range(0, len(pressure_df), data_inOneRow)]
     grouped_breakpoints=group_index(breakpoints_detected, 0, size, data_inOneRow)
     print(f"The plot is devided into {len(grouped_breakpoints)} rows")
     grouped_gound_truth=group_index(ground_truth, 0, size, data_inOneRow)
-    # count_breakpoints=0
+
     
+    #to store the plots for all the rows
     plots_toSave=[]
 
     for i,(sub_pressure_df,sub_breakpoints, sub_ground_truth) in enumerate(zip(grouped_pressure_df,grouped_breakpoints,grouped_gound_truth)):
@@ -240,7 +246,6 @@ def plot_4_metrics_details(data_inOneRow:int,
             print(f"------row {i+1}-----faulty detected points:{points_faulty}")
             print(f"------row {i+1}-----missed breakpoints:{points_missed}")  
 
-        # count_breakpoints+=len(sub_breakpoints)   
         #extract rate data for subplot     
         start_time=sub_pressure_df.iloc[0][pressure_time]
         end_time=sub_pressure_df.iloc[-1][pressure_time]
@@ -251,9 +256,8 @@ def plot_4_metrics_details(data_inOneRow:int,
                        sub_breakpoints,
                        sub_ground_truth,
                        plots_toSave,
+                       plot_name,
                        colum_names)
-    # print("count_breakpoints",count_breakpoints)
-    print("plots_toSave",plots_toSave)
     
     #save multifigs
     save_multi_plots(filename,plots_toSave)
