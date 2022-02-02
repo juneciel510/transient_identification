@@ -196,6 +196,9 @@ class PlotNSave:
                                   pressure_df,
                                   points_detected,
                                   ground_truth)
+            #plot horizontal lines in subplot of pressure and rate measures
+            # if i==0:
+            #     ax.axhline(y=0,color=hline_color)
             if i==1:
                 ax.axhline(y=0,color=hline_color)
                 
@@ -297,4 +300,14 @@ def plot_histogram(data, xlabel:str, ylabel:str,title:str)->None:
     # plt.legend(legend)
     plt.title(title)
     plt.show
+    
+def plot_nonDenoised_VS_Denoised(pressure_df,pressure_df_denoised,colum_names):
+    fig=plt.figure(figsize=(9,4))
+    ax=fig.subplots()
+    p=ax.plot(pressure_df[colum_names["pressure"]["time"]],pressure_df[colum_names["pressure"]["measure"]],label='raw data')
+    p=ax.plot(pressure_df[colum_names["pressure"]["time"]],pressure_df_denoised[colum_names["pressure"]["measure"]],label='S-G filtered')
+    legend = ax.legend(loc='upper left', shadow=True, fontsize='x-large')
+    # legend.get_frame().set_facecolor('C0')
+    plt.show()
+    
     
