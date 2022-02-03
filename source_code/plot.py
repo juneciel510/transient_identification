@@ -16,11 +16,11 @@ class PlotNSave:
                    ground_truth:List[int],
                    data_inOneRow:int,
                    plot_name:str,
-                   filename_toSave:str,
+                   filename_toSave:str="",
                    plot_statistics:bool=True,
                    plot_whole:bool=True,
                    plot_details:bool=True,
-                   colum_names:Dict[str,List[str]]
+                   colum_names:Dict[str,Dict[str,str]]
                    ={"pressure":{"time":"Elapsed time",
                                  "measure":"Data",
                                  "first_order_derivative":"first_order_derivative",
@@ -191,6 +191,8 @@ class PlotNSave:
         for i,(ax, x,y,color,size,y_label) in enumerate(zip(axs, x_coordinates,y_coordinates,scatter_colors,scatter_sizes,y_labels)):
             ax.scatter(x=x,y=y,color=color,s=size) 
             ax.set_ylabel(y_label,fontsize=16) 
+            ax.tick_params(labelbottom=True)
+            # ax.xaxis.tick_top()
             self.plot_breakpoints(ax,
                                   i,
                                   pressure_df,
@@ -255,7 +257,8 @@ class PlotNSave:
                         sub_ground_truth)
         
         #save multifigs
-        self.save_multi_plots()
+        if self.filename_toSave!="":
+            self.save_multi_plots()
         return None  
 
 

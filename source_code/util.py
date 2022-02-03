@@ -65,5 +65,22 @@ def produce_pressure_4metrics(pressure_df:pd.DataFrame,colum_names:Dict[str,List
     return pressure_df
     
 
-# class data_preprocessing:
+def pointsInterval_to_timeInterval(start_point:int, 
+                              end_point:int, 
+                              pressure_df:pd.DataFrame, 
+                              colum_names:Dict[str,Dict[str,str]]):
+    '''
+    Args:
+    start_point, end_point:the index of the point in the pressure time
+    Return:
+    time interval between the two points in hours, can be negative
+    '''
+    pressure_time=pressure_df[colum_names["pressure"]["time"]]
+    return pressure_time[end_point]-pressure_time[start_point]
+
+def timeInterval_to_pointsInterval():
+def timeInterval_to_sub_df():
+def timeInterval_to_indexOfMaxValue():
+    
+    
     
