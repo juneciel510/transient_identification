@@ -65,5 +65,76 @@ def produce_pressure_4metrics(pressure_df:pd.DataFrame,colum_names:Dict[str,List
     return pressure_df
     
 
-# class data_preprocessing:
+def pointsInterval_to_timeInterval(start_point:int, 
+                              end_point:int, 
+                              pressure_df:pd.DataFrame, 
+                              colum_names:Dict[str,Dict[str,str]]):
+    '''
+    Args:
+    start_point, end_point:the index of the point in the pressure time
+    Return:
+    time interval between the two points in hours, can be negative
+    '''
+    pressure_time=pressure_df[colum_names["pressure"]["time"]]
+    return pressure_time[end_point]-pressure_time[start_point]
+
+# def timeInterval_to_pointsInterval(start_time,end_time,pressure_df,rate_df,colum_names):
+#     rate_time=rate_df[colum_names["rate"]["time"]]
+#     sub_rate_df=rate_df.loc[(rate_time >= start_time) & (rate_time <= end_time)]
+#     # pd.set_option('display.max_rows', sub_rate_df.shape[0]+1)
+#     pressure_time=pressure_df[colum_names["pressure"]["time"]]
+#     sub_pressure_df=pressure_df.loc[(pressure_time >= start_time) & (pressure_time <= end_time)]
+#     return sub_rate_df,sub_pressure_df
+
+def timeInterval_to_sub_df(start_time,end_time,pressure_df,rate_df,colum_names):
+    rate_time=rate_df[colum_names["rate"]["time"]]
+    sub_rate_df=rate_df.loc[(rate_time >= start_time) & (rate_time <= end_time)]
+    # pd.set_option('display.max_rows', sub_rate_df.shape[0]+1)
+    pressure_time=pressure_df[colum_names["pressure"]["time"]]
+    sub_pressure_df=pressure_df.loc[(pressure_time >= start_time) & (pressure_time <= end_time)]
+    return sub_rate_df,sub_pressure_df
+# def timeInterval_to_indexOfMaxValue():
+
+def point_dt_to_pressure(point_index:int,
+                               pressure_df, 
+                               delta_t:float=1/12,
+                               colum_names:Dict={"pressure":{"time":"Date",
+                                "measure":"Pressure (psia)",
+                                "first_order_derivative":"first_order_derivative",
+                                "second_order_derivative":"second_order_derivative"},
+                                 "rate":{"time":"Time@end",
+                                         "measure":"Liquid rate (STB/D)"}})->List[float]:
+    """
+    Args:
+        delta_t:hour
+    """
+    pressure_time=pressure_df[colum_names["pressure"]["time"]]
+    start_time=pressure_time.iloc[point_index]
+    end_time=start_time+delta_t
+    if end_time>start_time:   
+        sub_pressure_df=pressure_df.loc[(pressure_time >= start_time) & (pressure_time <= end_time)]
+        return sub_pressure_df[colum_names["pressure"]["measure"]]
+    
+    sub_pressure_df=pressure_df.loc[(pressure_time >= end_time) & (pressure_time <= start_time)]
+    return sub_pressure_df[colum_names["pressure"]["measure"]]
+
+def pointInterval_to_pressure(point_index:int,
+                               pressure_df, 
+                               delta_point:int=10,
+                               colum_names:Dict={"pressure":{"time":"Date",
+                                "measure":"Pressure (psia)",
+                                "first_order_derivative":"first_order_derivative",
+                                "second_order_derivative":"second_order_derivative"},
+                                 "rate":{"time":"Time@end",
+                                         "measure":"Liquid rate (STB/D)"}})->List[float]:
+    """
+    extract pressure measurements between point_index and point_index+delta_point
+    Args:
+    """
+    if delta_point>0:
+        return pressure_df[colum_names["pressure"]["measure"]].iloc[point_index:point_index+delta_point]
+  
+    return pressure_df[colum_names["pressure"]["measure"]].iloc[point_index+delta_point:point_index]
+    
+    
     

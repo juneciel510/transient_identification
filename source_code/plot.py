@@ -1,133 +1,316 @@
 import numpy as np
 import pandas as pd
 import statistics
+import matplotlib as matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
+from matplotlib.backends.backend_pdf import PdfPages
 from operator import itemgetter
 from typing import Callable, Dict, List, Set, Tuple
 
-def group_index(data, bin_start, bin_end, bin_step):
-    x = np.array(data)
-    bin_edges = np.arange(bin_start, bin_end + bin_step, bin_step)
-    bin_number = bin_edges.size - 1
-    cond = np.zeros((x.size, bin_number), dtype=bool)
-    for i in range(bin_number):
-        cond[:, i] = np.logical_and(bin_edges[i] < x,
-                                    x < bin_edges[i+1])
-    return [list(x[cond[:, i]]) for i in range(bin_number)]
-
-# data=breakpoints 
-# bin_start=0
-# bin_end=len(pressure_df[pressure_time])
-# bin_step=100
-# group_index(breakpoints, 0, len(pressure_df[pressure_time]), N)
-
-
-def plot_breakpoints(ax,ax_index,breakpoints,faulty_detectedBreakpoints,pressure_df,pressure_time)->None:
-    
-    vline_color="cyan"
-    transient_color="fuchsia"
-    
-    for breakpoint in breakpoints:          
-        if len(faulty_detectedBreakpoints)==0:
-            if ax_index==1:
-                ax.text(pressure_df[pressure_time][breakpoint], .5, f'{breakpoint}', rotation=70)
-                ax.axvline(x=pressure_df[pressure_time][breakpoint],color=vline_color)
-            else:
-                ax.axvline(x=pressure_df[pressure_time][breakpoint],color=vline_color)
-        else:       
-            if breakpoint in faulty_detectedBreakpoints:
-                #plot faulty detected transients
-                temp_index=faulty_detectedBreakpoints.index(breakpoint)
-                if temp_index%2==0:
-                    faulty_detected_transient=[faulty_detectedBreakpoints[temp_index],faulty_detectedBreakpoints[temp_index+1]] 
-                else:
-                    faulty_detected_transient=[faulty_detectedBreakpoints[temp_index-1],faulty_detectedBreakpoints[temp_index]] 
-                
-                #if a transient is divided into two subplot
-                if faulty_detected_transient[0]<pressure_df.index[0]:
-                    faulty_detected_transient[0]=pressure_df.index[0]
-                if faulty_detected_transient[1]>pressure_df.index[-1]:
-                    faulty_detected_transient[1]=pressure_df.index[-1]
-
-                ax.axvspan(pressure_df[pressure_time][faulty_detected_transient[0]], pressure_df[pressure_time][faulty_detected_transient[1]], alpha=0.5, color=transient_color)
-            else:
-                ax.axvline(x=pressure_df[pressure_time][breakpoint],color=vline_color)
-                
-    return None
- 
-   
-def plot_4_metrics(pressure_df:pd.DataFrame,
+class PlotNSave:
+    def __init__(self, 
+                   pressure_df:pd.DataFrame,
                    rate_df:pd.DataFrame,
-                   breakpoints:List[int],
-                   faulty_detectedBreakpoints:List[int],
-                   colum_names:Dict[str,List[str]]
-                   ={"pressure":["Elapsed time","Data","first_order_derivative","second_order_derivative"],
-                    "rate":["Elapsed time","Liquid rate"]})->None:
-    
-    pressure_time, pressure_measure,first_order_derivative,second_order_derivative=colum_names["pressure"]
-    rate_time, rate_measure = colum_names["rate"]
-   
-    
-    plt.close('all')
-    rcParams.update({'figure.autolayout': True})
-    fig, axs = plt.subplots(nrows=4, sharex=True, dpi=100,figsize=(20,15), gridspec_kw={'height_ratios': [5, 3,3,3]})
-    fig.suptitle('pressure ~ rate ~ first derivative ~ second derivative', 
-              **{'family': 'Arial Black', 'size': 22, 'weight': 'bold'},x=0.5, y=1.005)
-    
-    x_coordinates=[pressure_df[pressure_time],
-                   rate_df[rate_time],
-                   pressure_df[pressure_time],
-                   pressure_df[pressure_time]]
-    y_coordinates=[pressure_df[pressure_measure],
-                   rate_df[rate_measure],
-                   pressure_df[first_order_derivative],
-                   pressure_df[second_order_derivative]]
-    scatter_colors=['blue','green','black','limegreen']
-    scatter_sizes=[4**2,6**2,5**2,5**2]
-    y_labels=[pressure_measure,first_order_derivative,second_order_derivative]
-    
-    for i,(ax, x,y,color,size,y_label) in enumerate(zip(axs, x_coordinates,y_coordinates,scatter_colors,scatter_sizes,y_labels)):
-        ax.scatter(x=x,y=y,color=color,s=size) 
-        ax.set_ylabel(y_label,fontsize=16) 
-        plot_breakpoints(ax,i,breakpoints,faulty_detectedBreakpoints,pressure_df,pressure_time)
-    
-
-    fig.subplots_adjust(bottom=0.1, top=0.9)
-    plt.show()       
-    return None
-  
-  
-def plot_4_metrics_details(data_inOneRow:int,
-                           pressure_df:pd.DataFrame,
-                           rate_df:pd.DataFrame,
-                           breakpoints:List[int],
-                           faulty_detectedBreakpoints:List[int],
-                           colum_names:Dict[str,List[str]]
-                               ={"pressure":["Elapsed time","Data","first_order_derivative","second_order_derivative"],
-                                "rate":["Elapsed time","Liquid rate"]})->None:
-    
-    pressure_time, pressure_measure,first_order_derivative,second_order_derivative=colum_names["pressure"]
-    rate_time, rate_measure = colum_names["rate"]
-    
-    size=len(pressure_df)
-    sub_pressure_df = [pressure_df.iloc[x:x+data_inOneRow,:] for x in range(0, len(pressure_df), data_inOneRow)]
-    grouped_breakpoints=group_index(breakpoints, 0, size, data_inOneRow)
-    print(len(grouped_breakpoints))
-    count_breakpoints=0
-
-    for sub_pressure_df,sub_breakpoints in zip(sub_pressure_df,grouped_breakpoints):
-        count_breakpoints+=len(sub_breakpoints)
-            
-        #extract rate data for subplot     
-        start_time=sub_pressure_df.iloc[0][pressure_time]
-        end_time=sub_pressure_df.iloc[-1][pressure_time]
-        sub_rate_df=rate_df.loc[(rate_df[rate_time] >= start_time) & (rate_df[rate_time] <= end_time)]
+                   points_detected:List[int],
+                   ground_truth:List[int],
+                   data_inOneRow:int,
+                   plot_name:str,
+                   filename_toSave:str="",
+                   plot_statistics:bool=True,
+                   plot_whole:bool=True,
+                   plot_details:bool=True,
+                   colum_names:Dict[str,Dict[str,str]]
+                   ={"pressure":{"time":"Elapsed time",
+                                 "measure":"Data",
+                                 "first_order_derivative":"first_order_derivative",
+                                 "second_order_derivative":"second_order_derivative"},
+                    "rate":{"time":"Elapsed time","measure":"Liquid rate"}}):
+        print("---initializing...")
+        self.pressure_df=pressure_df
+        self.rate_df=rate_df
+        self.points_detected=points_detected
+        self.ground_truth=ground_truth
+        self.data_inOneRow=data_inOneRow
+        self.plot_name=plot_name
+        self.filename_toSave=filename_toSave
+        self.colum_names=colum_names
+        self.plot_statistics=plot_statistics
+        self.plot_whole=plot_whole
+        self.plot_details=plot_details
+        self.plots_toSave=[]
         
-        plot_4_metrics(sub_pressure_df,
-                       sub_rate_df,
-                       sub_breakpoints,
-                       faulty_detectedBreakpoints,
-                       colum_names)
-    print("count_breakpoints",count_breakpoints)
-    return None  
+        print("---plotting...")
+        if self.plot_statistics:
+            self.plot_detection_statistics()
+        if self.plot_whole:
+            self.plot_4_metrics(self.pressure_df,
+                                self.rate_df,
+                                self.points_detected,
+                                self.ground_truth)
+        if self.plot_details:
+            self.plot_4_metrics_details()
+    
+    def get_metrics(self, 
+                    pressure_df:pd.DataFrame,
+                    rate_df:pd.DataFrame)->(List[float],List[float],List[float],List[float],List[float],List[float]):
+        pressure_time=pressure_df[self.colum_names["pressure"]["time"]]
+        pressure_measure=pressure_df[self.colum_names["pressure"]["measure"]]
+        pressure_first_order_derivative=pressure_df[self.colum_names["pressure"]["first_order_derivative"]]
+        pressure_second_order_derivative=pressure_df[self.colum_names["pressure"]["second_order_derivative"]]
+        rate_time=rate_df[self.colum_names["rate"]["time"]]
+        rate_measure=rate_df[self.colum_names["rate"]["measure"]]
+        return (pressure_time, pressure_measure, pressure_first_order_derivative,pressure_second_order_derivative,rate_time,rate_measure)
+    
+    def group_index(self,data:List[int], bin_start:int, bin_end:int, bin_step:int)->List[List[int]]:
+        x = np.array(data)
+        bin_edges = np.arange(bin_start, bin_end + bin_step, bin_step)
+        bin_number = bin_edges.size - 1
+        cond = np.zeros((x.size, bin_number), dtype=bool)
+        for i in range(bin_number):
+            cond[:, i] = np.logical_and(bin_edges[i] < x,
+                                        x < bin_edges[i+1])
+        return [list(x[cond[:, i]]) for i in range(bin_number)]
+
+    def detected_points_categories_2(self,points_detected,ground_truth):
+            '''
+            Classify the detected points into 3 categories: points correct, points faulty, points missed.
+            
+            if the detected point is 10 points ahead or behind the true breakpoint,
+            we think that point is correctly detected.
+            Since sometimes smoothing may cause deviation of breakpoints.
+            Args:
+            Returns:
+            ''' 
+            
+            points_faulty=points_detected.copy()
+            points_missed=ground_truth.copy()
+            points_correct=[]
+            for point_detected in points_detected:
+                for point_true in ground_truth:
+                    if abs(point_true-point_detected)<=10:
+                        points_correct.append(point_detected)
+                        points_faulty.remove(point_detected)
+                        points_missed.remove(point_true)              
+                        break
+            
+            points_correct.sort()
+            points_faulty.sort()
+            points_missed.sort()
+            return points_correct,points_faulty, points_missed
+        
+    def detected_points_categories(self,points_detected,ground_truth):
+        '''
+
+        '''                   
+        points_correct=[point for point in points_detected if point in ground_truth]
+        points_correct.sort()
+        points_faulty=[point for point in points_detected if point not in ground_truth]
+        points_faulty.sort()
+        points_missed=[point for point in ground_truth if point not in points_detected]
+        points_missed.sort()
+    
+        return points_correct,points_faulty, points_missed
+
+    def plot_breakpoints(self,
+                         ax,ax_index,
+                         pressure_df:pd.DataFrame,
+                         points_detected:List[int],
+                         ground_truth:List[int],
+                         )->None:
+        
+        # vline_color="cyan"
+        vline_color="dodgerblue"
+        color_points_missed="gold"
+        color_points_faulty="fuchsia"
+        
+        pressure_time=pressure_df[self.colum_names["pressure"]["time"]]
+        
+        #if ground truth not given, just plot detected points       
+        if len(ground_truth)==0:
+            for point in points_detected: 
+                #specify the index of points in the second plot
+                if ax_index==1:
+                    # ax.text(self.pressure_time[point], .5, f'{point}', rotation=70)
+                    ax.axvline(x=pressure_time[point],color=vline_color,label='Points detected')
+                else:
+                    ax.axvline(x=pressure_time[point],color=vline_color,label='Points detected')
+        
+        #if ground truth is given, plot missed points, faulty detected points as well           
+        if len(ground_truth)>0:  
+            points_correct,points_faulty,points_missed=self.detected_points_categories_2(points_detected,ground_truth)
+            all_points=set(points_detected+ground_truth)
+            
+            for point in all_points:     
+                if point in points_faulty:
+                    ax.axvline(x=pressure_time[point],color=color_points_faulty,label='Points faulty')
+                elif point in points_missed:
+                    ax.axvline(x=pressure_time[point],color=color_points_missed,label='Points missed')     
+                else:
+                    ax.axvline(x=pressure_time[point],color=vline_color,label='Points correct')
+            
+        #many labels are produced, just lengend unique ones        
+        handles, labels = ax.get_legend_handles_labels()
+        labels, ids = np.unique(labels, return_index=True)
+        handles = [handles[i] for i in ids]
+        ax.legend(handles, labels, loc='best',shadow=True, fontsize='large')
+                     
+        return None
+
+    def plot_4_metrics(self, 
+                       pressure_df:pd.DataFrame,
+                       rate_df:pd.DataFrame,
+                       points_detected:List[int],
+                       ground_truth:List[int],)->None: 
+        # plt.close('all')
+        rcParams.update({'figure.autolayout': True})
+        fig, axs = plt.subplots(nrows=4, sharex=True, dpi=100,figsize=(20,13), gridspec_kw={'height_ratios': [3, 3,3,3]})
+        (pressure_time, 
+        pressure_measure, 
+        pressure_first_order_derivative,
+        pressure_second_order_derivative,
+        rate_time,
+        rate_measure)=self.get_metrics(pressure_df,rate_df)
+        x_coordinates=[pressure_time,
+                    rate_time,
+                    pressure_time,
+                    pressure_time]
+        y_coordinates=[pressure_measure,
+                    rate_measure,
+                    pressure_first_order_derivative,
+                    pressure_second_order_derivative]
+        # scatter_colors=['blue','green','black','limegreen']
+        scatter_colors=['red','green','orangered','limegreen']
+        scatter_sizes=[4**2,6**2,5**2,5**2]   
+        y_labels=[self.colum_names["pressure"]["measure"],
+                  self.colum_names["rate"]["measure"],
+                  self.colum_names["pressure"]["first_order_derivative"],
+                  self.colum_names["pressure"]["second_order_derivative"]]
+        hline_color="purple"
+        
+        for i,(ax, x,y,color,size,y_label) in enumerate(zip(axs, x_coordinates,y_coordinates,scatter_colors,scatter_sizes,y_labels)):
+            ax.scatter(x=x,y=y,color=color,s=size) 
+            ax.set_ylabel(y_label,fontsize=16) 
+            ax.tick_params(labelbottom=True)
+            # ax.xaxis.tick_top()
+            self.plot_breakpoints(ax,
+                                  i,
+                                  pressure_df,
+                                  points_detected,
+                                  ground_truth)
+            #plot horizontal lines in subplot of pressure and rate measures
+            # if i==0:
+            #     ax.axhline(y=0,color=hline_color)
+            if i==1:
+                ax.axhline(y=0,color=hline_color)
+                
+        fig.subplots_adjust(bottom=0.1, top=0.9)
+        self.plots_toSave.append(fig)
+        fig.suptitle(f'{self.plot_name}--Row {len(self.plots_toSave)}', 
+            **{'family': 'Arial Black', 'size': 22, 'weight': 'bold'},x=0.5, y=0.98)
+        plt.show()       
+        # plt.close()
+        return None
+  
+    
+    def save_multi_plots(self):
+        pp = PdfPages(self.filename_toSave)
+        for fig in self.plots_toSave:
+            fig.savefig(pp, format='pdf')
+        pp.close()
+
+    def plot_4_metrics_details(self)->None:
+        
+        print(f"detected {len(self.points_detected)} points as breakpoints")
+        
+        #seperate data into different rows 
+        size=len(self.pressure_df)
+        grouped_pressure_df = [self.pressure_df.iloc[x:x+self.data_inOneRow,:] for x in range(0, len(self.pressure_df), self.data_inOneRow)]
+        grouped_breakpoints=self.group_index(self.points_detected, 0, size, self.data_inOneRow)
+        print(f"The plot is devided into {len(grouped_breakpoints)} rows")
+        grouped_gound_truth=self.group_index(self.ground_truth, 0, size, self.data_inOneRow)
+
+        
+        #to store the plots for all rows
+        self.plots_toSave=[]
+
+        for i,(sub_pressure_df,sub_breakpoints, sub_ground_truth) in enumerate(zip(grouped_pressure_df,grouped_breakpoints,grouped_gound_truth)):
+            #print
+            if len(self.ground_truth)==0:
+                sub_breakpoints.sort()
+                print(f"------row {i+1}-----detected points:{sub_breakpoints}")
+            if len(self.ground_truth)!=0:
+                points_correct,points_faulty,points_missed=self.detected_points_categories_2(sub_breakpoints,sub_ground_truth)
+                print(f"------row {i+1}-----correctly detected points:{points_correct}")
+                print(f"------row {i+1}-----faulty detected points:{points_faulty}")
+                print(f"------row {i+1}-----missed breakpoints:{points_missed}")  
+
+            #extract rate data for a certain row     
+            start_time=sub_pressure_df.iloc[0][self.colum_names["pressure"]["time"]]
+            end_time=sub_pressure_df.iloc[-1][self.colum_names["pressure"]["time"]]
+            rate_time=self.rate_df[self.colum_names["rate"]["time"]]
+            sub_rate_df=self.rate_df.loc[(rate_time >= start_time) & (rate_time <= end_time)]
+            
+            self.plot_4_metrics(sub_pressure_df,
+                        sub_rate_df,
+                        sub_breakpoints,
+                        sub_ground_truth)
+        
+        #save multifigs
+        if self.filename_toSave!="":
+            self.save_multi_plots()
+        return None  
+
+
+
+    def plot_detection_statistics(self)->None:
+        if len(self.ground_truth)==0:
+            print("No ground truth defined")
+            return None
+        
+        points_correct,points_faulty,points_missed=self.detected_points_categories_2(self.points_detected,self.ground_truth)
+        print("the number of ground_truth",len(self.ground_truth))
+        print("the number of points_correct",len(points_correct))
+        print("the number of points_faulty",len(points_faulty))
+        print("the number of points_missed",len(points_missed))
+
+        # creating the dataset for bar plot
+        data = {'points correct':round(len(points_correct)/len(self.ground_truth) ,3), 
+                'points faulty':round(len(points_faulty)/len(self.ground_truth) ,3),  
+                'points missed':round(len(points_missed)/len(self.ground_truth) ,3), }
+        bars = list(data.keys())
+        values = list(data.values())
+        
+        # creating the bar plot
+        fig = plt.figure(figsize = (7, 4))
+        plt.bar(bars, values, color=['dodgerblue','fuchsia',  'gold'])
+
+        for index, value in enumerate(values):
+            plt.text(index-0.06, value+0.01,f"{round(value*100,3)}%")
+            
+        plt.xlabel("")
+        plt.ylabel("Percentage")
+        plt.title("")
+        plt.show()
+        return None
+
+def plot_histogram(data, xlabel:str, ylabel:str,title:str)->None:
+    number_bins=300
+    # plt.style.use('ggplot')
+    plt.hist(data, bins=number_bins)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    # plt.legend(legend)
+    plt.title(title)
+    plt.show
+    
+def plot_nonDenoised_VS_Denoised(pressure_df,pressure_df_denoised,colum_names):
+    fig=plt.figure(figsize=(9,4))
+    ax=fig.subplots()
+    p=ax.plot(pressure_df[colum_names["pressure"]["time"]],pressure_df[colum_names["pressure"]["measure"]],label='raw data')
+    p=ax.plot(pressure_df[colum_names["pressure"]["time"]],pressure_df_denoised[colum_names["pressure"]["measure"]],label='S-G filtered')
+    legend = ax.legend(loc='upper left', shadow=True, fontsize='x-large')
+    # legend.get_frame().set_facecolor('C0')
+    plt.show()
+    
+    
