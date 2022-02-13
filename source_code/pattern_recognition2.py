@@ -20,6 +20,7 @@ from operator import itemgetter
 from typing import Callable, Dict, List, Set, Tuple
 from scipy.signal import savgol_filter
 import math 
+import bisect
 
 #pattern recognition method
 def test_func(x, a,b,c,d):
@@ -39,10 +40,12 @@ def polyval_func_wrapper(x, *parameters):
     y = np.polyval(parameters,x)
     return y
 def linear_func_wrapper(x, a,b):
+    # print("---linear-----")
     y = a*x+b
     return y
-def log_func_wrapper(x,a):
-    y=a*math.log(x)
+def log_func_wrapper(x,a,b,c,d):
+    print("---log-----")
+    y=a*np.log(x)+d+b*x+c*x*x
     return y
 
 # def fitting_func_wapper(x, parameters):
@@ -54,6 +57,7 @@ class PatternRecognition:
     def __init__(self, 
                  point_halfWindow:int=5,
                  time_halfWindow:float=0.5,
+                 time_halfWindow_forLearn:float=1,
 #                  fitting_func=None,
 #                  filePath_learnedPattern="../data_output/Learned_Pattern.csv",
                  filePath_learnedPattern="../data_output/Learned_Pattern.jason",
@@ -63,6 +67,7 @@ class PatternRecognition:
         
         self.ground_truth =[]
         self.point_halfWindow=point_halfWindow
+        self.time_halfWindow_forLearn=time_halfWindow_forLearn
         self.time_halfWindow=time_halfWindow
         self.fitting_func=None
         self.filePath_learnedPattern=filePath_learnedPattern
@@ -118,7 +123,7 @@ class PatternRecognition:
         return parameters_twoPatterns
     
         
-    def extract_points_inWindow(self,pressure_measure,pressure_time,points): 
+    def extract_points_inPointWindow(self,pressure_measure,pressure_time,points): 
         """
         extract pressure measure & time data for all points 
         in window  [point_index-point_halfWindow,point_index+point_halfWindow]
@@ -154,8 +159,63 @@ class PatternRecognition:
 #         self.curveDataLeft.to_csv(self.filepath_curveDataLeft,index=False,float_format='%.4f',sep='\t')
 #         self.curveDataRight.to_csv(self.filepath_curveDataRight,index=False,float_format='%.4f',sep='\t') 
 
+    def extract_points_inWindow(self,pressure_measure,pressure_time,points): 
+            """
+            extract pressure measure & time data for all points 
+            in window  [point_index-point_halfWindow,point_index+point_halfWindow]
+            """
+            self.curveData=pd.DataFrame(columns=['pressure_time_left', 
+                                                'pressure_measure_left',
+                                                'pressure_time_right', 
+                                                'pressure_measure_right'])
+            
+            for point_index in points:
+                #convert timewindow to point window 
+                time_leftStart=pressure_time[point_index]-self.time_halfWindow_forLearn
+                halfWinow_left=point_index-bisect.bisect_left(pressure_time, time_leftStart) 
+                if halfWinow_left<self.point_halfWindow:
+                    halfWinow_left=self.point_halfWindow
+                 
+                time_rightEnd=pressure_time[point_index]+self.time_halfWindow_forLearn
+                halfWinow_right=bisect.bisect_left(pressure_time, time_rightEnd)-1-point_index
+                if halfWinow_right<self.point_halfWindow:
+                    halfWinow_right=self.point_halfWindow
+                
+                data=self.extract_singlePoint_inPointWindow(pressure_measure,pressure_time,point_index,halfWinow_left,halfWinow_right)
+                
+                self.curveData=self.curveData.append(data,ignore_index=True)
+                
+    def extract_singlePoint_inPointWindow(self,pressure_measure,pressure_time,point_index,halfWinow_left,halfWinow_right): 
+            """
+            extract pressure measure & time data for a single point
+            in window  [point_index-point_halfWindow,point_index+point_halfWindow]
+            """
 
-    def fit_curve(self,xdata,ydata,color,plot_title="",fitting_type:str="linear"):
+            
+            #left
+            sub_measure=pressure_measure[point_index+1-halfWinow_left:point_index+1]
+            sub_time=pressure_time[point_index+1-halfWinow_left:point_index+1]
+            curve_pressure=[round(measure-sub_measure[-1],6) for measure in sub_measure]
+            curve_time=[round(time-sub_time[-1],6) for time in sub_time]
+            data={"pressure_time_left":curve_time,"pressure_measure_left":curve_pressure}
+            
+        
+            
+            #right
+            sub_measure=pressure_measure[point_index:point_index+halfWinow_right]
+            sub_time=pressure_time[point_index:point_index+halfWinow_right]
+            curve_pressure=[round(measure-sub_measure[0],6) for measure in sub_measure]
+            curve_time=[round(time-sub_time[0],6) for time in sub_time]
+            data.update({"pressure_time_right":curve_time,
+                        "pressure_measure_right":curve_pressure})
+            return data
+             
+                
+                
+             
+
+    def fit_curve(self,xdata,ydata,color,fitting_type,plot_title=""):
+        # print("---------------fit_curve",fitting_type)
         x = np.asarray(xdata)
         y = np.asarray(ydata)
         
@@ -164,7 +224,7 @@ class PatternRecognition:
         
         if fitting_type=="polynomial":
             parameters=np.polyfit(x,y,3)
-        if fitting_type=="linear" or "log":
+        if fitting_type=="linear" or fitting_type=="log":
             parameters, covariance = curve_fit(self.fitting_func, x, y)
 
         y_fit=self.fitting_func(x, *parameters)
@@ -175,11 +235,12 @@ class PatternRecognition:
         plt.scatter(x=x,y=y,color=color)
         plt.plot(x, y_fit, color=color,linestyle='-')
         plt.title(plot_title)
-        if fitting_type=="log":
+        if fitting_type=="log" or fitting_type=="polynomial":
             plt.show()
         return parameters
     
-    def calculate_Parameters_allCurve(self,name_pattern="",plot_title="",fitting_type:str="linear"):
+    def calculate_Parameters_allCurve(self,fitting_type,name_pattern="",plot_title=""):
+        print("---------------calculate_Parameters_allCurve",fitting_type)
         curveLeft_parameters=[]
         curveRight_parameters=[]
         self.parameters_allCurves=pd.DataFrame()
@@ -205,9 +266,9 @@ class PatternRecognition:
             # set the title to be the breakpoint index
             if fitting_type=="linear":
                 plot_title=f"{self.ground_truth[i]}"      
-            if fitting_type=="polynomial" or "log":
-                plot_title=f"{name_pattern}"   
-            curveLeft_parameters.append(self.fit_curve(xdata,ydata,color,plot_title,fitting_type))
+            if fitting_type=="polynomial" or fitting_type=="log":
+                plot_title=f"{name_pattern}---{self.ground_truth[i]}"   
+            curveLeft_parameters.append(self.fit_curve(xdata,ydata,color,fitting_type,plot_title))
 
             
             #right side
@@ -221,13 +282,13 @@ class PatternRecognition:
                 self.x_rightPlot=xdata
                 
             color="blue" 
-            curveRight_parameters.append(self.fit_curve(xdata,ydata,color,plot_title,fitting_type))
+            curveRight_parameters.append(self.fit_curve(xdata,ydata,color,fitting_type,plot_title))
             
         self.parameters_allCurves=pd.DataFrame({"left_curves_parameters":curveLeft_parameters,
                          "right_curves_parameters":curveRight_parameters})
         
             
-    def calculate_parameters_pattern(self,loadedParameters_pattern):
+    def calculate_parameters_pattern(self,fitting_type,loadedParameters_pattern):
         """
         calculate the parameters of four border curves
         -------------
@@ -285,8 +346,8 @@ class PatternRecognition:
                 plt.plot(x_left, y_left, '-', label='New_fit',
                          color="orange",linewidth=1)        
             
-        left_parameters_pattern=self.find_border(x_left,y_left_allCurve)
-        right_parameters_pattern=self.find_border(x_right,y_right_allCurve)
+        left_parameters_pattern=self.find_border(x_left,y_left_allCurve,fitting_type)
+        right_parameters_pattern=self.find_border(x_right,y_right_allCurve,fitting_type)
         parameters_pattern["left_top"]=left_parameters_pattern["top"]
         parameters_pattern["left_bottom"]=left_parameters_pattern["bottom"]
         parameters_pattern["right_top"]=right_parameters_pattern["top"]
@@ -301,7 +362,7 @@ class PatternRecognition:
         figure.legend(by_label.values(), by_label.keys(),shadow=True, fontsize='large')
 
 
-    def find_border(self,x,y_allCurve,plot_title=""):
+    def find_border(self,x,y_allCurve,fitting_type,plot_title=""):
         """
         calculate parameters of top curve and buttom curve 
         for left or right side of buildup or drawndown pattern
@@ -310,10 +371,10 @@ class PatternRecognition:
         
         y_allCurve_max=y_allCurve.max(axis=0)
         color="green"
-        parameters_half_pattern["top"]=self.fit_curve(x,y_allCurve_max,color,plot_title,"linear")
+        parameters_half_pattern["top"]=self.fit_curve(x,y_allCurve_max,color,fitting_type,plot_title)
      
         y_allCurve_min=y_allCurve.min(axis=0)
-        parameters_half_pattern["bottom"]=self.fit_curve(x,y_allCurve_min,color,plot_title,"linear")
+        parameters_half_pattern["bottom"]=self.fit_curve(x,y_allCurve_min,color,fitting_type,plot_title)
         
         return parameters_half_pattern
     
@@ -327,6 +388,7 @@ class PatternRecognition:
         if slope_left>slope_right: drawdown
         else: buildup
         """
+        print("detect_breakpoint.....")
         self.fitting_func=linear_func_wrapper
         self.extract_points_inWindow(pressure_measure,pressure_time,points)
         self.calculate_Parameters_allCurve(fitting_type="linear")
@@ -348,25 +410,29 @@ class PatternRecognition:
 #         if filePath_loadPattern!=None:
 #             self.load_pattern(filePath_loadPattern)
 #             self.PatternLoaded=True
-        self.extract_points_inWindow(pressure_measure,pressure_time,ground_truth)
-        self.calculate_Parameters_allCurve(name_pattern=name_pattern,fitting_type=fitting_type)
-        parameters_pattern=self.calculate_parameters_pattern(loadedParameters_pattern)
-        return parameters_pattern
-    
-    def learn(self,pressure_measure,pressure_time,ground_truth,fitting_type="",filePath_loadPattern=None):
-        self.ground_truth = ground_truth
+        # print("-----learn_buildUp_or_drawDown",fitting_type)
         if fitting_type == "linear":
             self.fitting_func=linear_func_wrapper
         if fitting_type == "polynomial":
             self.fitting_func=polyval_func_wrapper
         if fitting_type == "log":
             self.fitting_func=log_func_wrapper
+        print(f"---------start to learn '{name_pattern}' pattern")
+        self.extract_points_inWindow(pressure_measure,pressure_time,ground_truth)
+        self.calculate_Parameters_allCurve(name_pattern=name_pattern,fitting_type=fitting_type)
+        parameters_pattern=self.calculate_parameters_pattern(fitting_type,loadedParameters_pattern)
+        return parameters_pattern
+    
+    def learn(self,pressure_measure,pressure_time,ground_truth,fitting_type,filePath_loadPattern=None):
+        # print("-----------------learn",fitting_type)
+        self.ground_truth = ground_truth
         ground_truth_buildUp,ground_truth_drawDown=self.detect_breakpoint_type(pressure_measure,
                                                                            pressure_time,
                                                                            ground_truth)
+        print(f"------In the input ground truth: {len(ground_truth_buildUp)} points are detected as buildup, {len(ground_truth_drawDown)} points are detected as drawDown")
         self.breakpoints_forLearn={"buildUp":ground_truth_buildUp,
                                    "drawDown":ground_truth_drawDown}
-        print("----ground_truth_buildUp,ground_truth_drawDown",ground_truth_buildUp,ground_truth_drawDown)
+        # print("----ground_truth_buildUp,ground_truth_drawDown",ground_truth_buildUp,ground_truth_drawDown)
 #         if filePath_loadPattern!=None:
         loadedParameters_twoPattern=self.load_pattern(filePath_loadPattern)
 #             self.PatternLoaded=True
@@ -382,7 +448,8 @@ class PatternRecognition:
                                                                 pressure_time,
                                                                 points,
                                                                 loadedParameters_pattern,
-                                                                name_pattern)
+                                                                name_pattern,
+                                                                fitting_type)
         
         
         
