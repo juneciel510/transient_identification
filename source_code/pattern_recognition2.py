@@ -65,9 +65,16 @@ class PatternRecognition:
 #                 filepath_curveDataRight= "../data_output/curveDataRight_forLearning.csv"
                 ):
         
+        #to store the input groundtruth, including buildup & drawdown together
         self.ground_truth =[]
+        #to store the points for learn, classified as buildup & drawdown
+        self.breakpoints_forLearn=defaultdict(list)
+        #to store the points predicted 
+        self.detectedpoints=defaultdict(list)
         self.point_halfWindow=point_halfWindow
+        #time window for learn
         self.time_halfWindow_forLearn=time_halfWindow_forLearn
+        #time window for predict
         self.time_halfWindow=time_halfWindow
         self.fitting_func=None
         self.filePath_learnedPattern=filePath_learnedPattern
@@ -101,8 +108,7 @@ class PatternRecognition:
                                                "right_bottom":[]}}
 #         self.detectedpoints_buildUp=[]
 #         self.detectedpoints_drawDown=[]
-        self.breakpoints_forLearn=defaultdict(list)
-        self.detectedpoints=defaultdict(list)
+
 #         self.x_leftPlot=[]
 #         self.x_rightPlot=[]
 #         self.patternLoaded=False
@@ -235,8 +241,8 @@ class PatternRecognition:
         plt.scatter(x=x,y=y,color=color)
         plt.plot(x, y_fit, color=color,linestyle='-')
         plt.title(plot_title)
-        if fitting_type=="log" or fitting_type=="polynomial":
-            plt.show()
+        # if fitting_type=="log" or fitting_type=="polynomial":
+        #     plt.show()
         return parameters
     
     def calculate_Parameters_allCurve(self,fitting_type,name_pattern="",plot_title=""):
@@ -318,8 +324,8 @@ class PatternRecognition:
         number=30
         y_left_allCurve = np.empty((0, number), float)
         y_right_allCurve = np.empty((0, number), float)
-        x_left=np.linspace(start = -self.time_halfWindow, stop = 0, num = number)
-        x_right=np.linspace(start = 0, stop = self.time_halfWindow, num = number)
+        x_left=np.linspace(start = -self.time_halfWindow_forLearn, stop = 0, num = number)
+        x_right=np.linspace(start = 0, stop = self.time_halfWindow_forLearn, num = number)
     
         fig=plt.figure(figsize = (20, 10))
         curve_number=len(self.parameters_allCurves)
@@ -417,7 +423,7 @@ class PatternRecognition:
             self.fitting_func=polyval_func_wrapper
         if fitting_type == "log":
             self.fitting_func=log_func_wrapper
-        print(f"---------start to learn '{name_pattern}' pattern")
+        print(f"start to learn '{name_pattern}' pattern...")
         self.extract_points_inWindow(pressure_measure,pressure_time,ground_truth)
         self.calculate_Parameters_allCurve(name_pattern=name_pattern,fitting_type=fitting_type)
         parameters_pattern=self.calculate_parameters_pattern(fitting_type,loadedParameters_pattern)
