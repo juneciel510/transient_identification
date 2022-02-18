@@ -22,6 +22,8 @@ from scipy.signal import savgol_filter
 import math 
 import bisect
 
+from plot2 import plot_histogram
+
 #pattern recognition method
 def test_func(x, a,b,c,d):
     y = a+b*x-c*np.exp(-d*x)
@@ -55,7 +57,7 @@ def log_func_wrapper(x,a,b,c,d):
 
 class PatternRecognition:
     def __init__(self, 
-                 point_halfWindow:int=5,
+                 point_halfWindow:int=3,
                  time_halfWindow:float=0.5,
                  time_halfWindow_forLearn:float=1,
 #                  fitting_func=None,
@@ -229,7 +231,7 @@ class PatternRecognition:
 #         y_fit = self.fitting_func(x, *parameters)
         
         if fitting_type=="polynomial":
-            parameters=np.polyfit(x,y,3)
+            parameters=np.polyfit(x,y,5)
         if fitting_type=="linear" or fitting_type=="log":
             parameters, covariance = curve_fit(self.fitting_func, x, y)
 
@@ -241,8 +243,8 @@ class PatternRecognition:
         plt.scatter(x=x,y=y,color=color)
         plt.plot(x, y_fit, color=color,linestyle='-')
         plt.title(plot_title)
-        # if fitting_type=="log" or fitting_type=="polynomial":
-        #     plt.show()
+        if fitting_type=="log" or fitting_type=="polynomial":
+            plt.show()
         return parameters
     
     def calculate_Parameters_allCurve(self,fitting_type,name_pattern="",plot_title=""):
@@ -368,6 +370,22 @@ class PatternRecognition:
         figure.legend(by_label.values(), by_label.keys(),shadow=True, fontsize='large')
 
 
+    # def find_border(self,x,y_allCurve,fitting_type,plot_title=""):
+    #     """
+    #     calculate parameters of top curve and buttom curve 
+    #     for left or right side of buildup or drawndown pattern
+    #     """
+    #     parameters_half_pattern={}
+        
+    #     y_allCurve_max=y_allCurve.max(axis=0)
+    #     color="green"
+    #     parameters_half_pattern["top"]=self.fit_curve(x,y_allCurve_max,color,fitting_type,plot_title)
+     
+    #     y_allCurve_min=y_allCurve.min(axis=0)
+    #     parameters_half_pattern["bottom"]=self.fit_curve(x,y_allCurve_min,color,fitting_type,plot_title)
+        
+    #     return parameters_half_pattern
+    
     def find_border(self,x,y_allCurve,fitting_type,plot_title=""):
         """
         calculate parameters of top curve and buttom curve 
@@ -404,9 +422,25 @@ class PatternRecognition:
         for index,parameter in self.parameters_allCurves.iterrows():
             #compare slope and convert index in the parameters_allCurves to in pressure_df
             if parameter["left_curves_parameters"][0]<parameter["right_curves_parameters"][0]:
-                breakpoint_buildUp.append(points[index])
-            else:
-                breakpoint_drawDown.append(points[index])
+                if parameter["left_curves_parameters"][0]<parameter["right_curves_parameters"][0]<0:
+                    print(f"===============\n"
+                          f"point '{points[index]}' is going to be classified as buildup,\n"
+                          f"however the ground truth should be drawdown,\n"
+                          f"there must be a bump in window thus should not be included into breakpoints for learning\n"
+                          f"===============")
+                else:
+                    breakpoint_buildUp.append(points[index])
+                
+                
+            if parameter["left_curves_parameters"][0]>parameter["right_curves_parameters"][0]:
+                if parameter["left_curves_parameters"][0]>parameter["right_curves_parameters"][0]>0:
+                    print(f"===============\n"
+                          f"point '{points[index]}' is going to be classified as drawdown,\n"
+                          f"however the ground truth should be biuldup,\n"
+                          f"there must be a cavity in window thus should not be included into breakpoints for learning\n"
+                          f"===============")
+                else:
+                    breakpoint_drawDown.append(points[index])
         return breakpoint_buildUp,breakpoint_drawDown
 
         

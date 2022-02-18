@@ -310,9 +310,10 @@ def plot_detection_statistics(breakpoints_detected:List[int],ground_truth:List[i
     plt.show()
     return None
 
-def plot_histogram(data, xlabel:str, ylabel:str,title:str)->None:
+def plot_histogram(data, xlabel:str="", ylabel:str="",title:str="")->None:
     number_bins=300
     # plt.style.use('ggplot')
+    plt.figure()
     plt.hist(data, bins=number_bins)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
