@@ -799,9 +799,10 @@ class PatternRecognition:
             
         
         
-    def predict(self,pressure_measure,pressure_time,second_order_derivative):
+    def predict(self,pressure_measure,pressure_time,second_order_derivative,mode="whole_dataset",fitting_type="polynomial"):
         #store border for every point
 #         self.borderData=pd.DataFrame(columns=self.border_names)
+        self.get_pattern(fitting_type)
         self.std_2=statistics.stdev(second_order_derivative)
         self.borderData=pd.DataFrame()
         detectedpoints_buildUp=[]
@@ -811,7 +812,14 @@ class PatternRecognition:
         # self.extract_points_inTimeWindow(pressure_measure,pressure_time,points)
         
         #time window
-        points=[point_index for point_index in range(len(pressure_measure))]
+        if mode=="whole_dataset":   
+            points=[point_index for point_index in range(len(pressure_measure))]
+        elif mode=="refine_detection":
+            points=[]
+            for detected_points in self.detectedpoints.values():
+                points.extend(detected_points)
+        else:
+            print("check the mode, it must be 'whole_dataset' or 'refine_detection'...")
         self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,self.time_halfWindow_forPredict)
 
         for index,curveData in self.curveData.iterrows():  
@@ -842,10 +850,14 @@ class PatternRecognition:
         detectedpoints_buildUp,detectedpoints_drawDown=self.refine_detectedPoints(pressure_measure,pressure_time)
         return detectedpoints_buildUp,detectedpoints_drawDown
     
-    def get_tangent(self,parameters_allCurves:pd.DataFrame)->pd.DataFrame:
+    def get_tangent(self,parameters_allCurves:pd.DataFrame,fitting_type="polynomial")->pd.DataFrame:
         #for polynomial fit the third parameter is the tangent
-        left_tangent=[parameters[2] for parameters in parameters_allCurves["left_curves_parameters"]] 
-        right_tangent=[parameters[2] for parameters in parameters_allCurves["right_curves_parameters"]] 
+        if fitting_type=="polynomial":
+            n=2
+        if fitting_type=="linear":
+            n=0   
+        left_tangent=[parameters[n] for parameters in parameters_allCurves["left_curves_parameters"]] 
+        right_tangent=[parameters[n] for parameters in parameters_allCurves["right_curves_parameters"]] 
         print(len(left_tangent),len(parameters_allCurves))
         print(len(right_tangent),len(parameters_allCurves))
         tangent_df=pd.DataFrame({"point_index":parameters_allCurves["point_index"],"left_tangent":left_tangent,"right_tangent":right_tangent})
@@ -863,6 +875,7 @@ class PatternRecognition:
             return list_max,list_min
     
     def get_tangents_twoPatterns(self):
+    
         for pattern_name in self.pattern_names:
             tangent_groundTruth_buildUpOrDrawDown=self.get_tangent(self.parameters_allCurves_groundTruth[pattern_name])
             #left side
@@ -884,17 +897,25 @@ class PatternRecognition:
             #                                                         percentile_lowerBound)
 
     
-    def predict_usingTangent(self,pressure_measure,pressure_time,fitting_type="polynomial"):
+    def predict_usingTangent(self,pressure_measure,pressure_time,mode="whole_dataset",fitting_type="polynomial"):
+        self.get_tangents_twoPatterns()
         self.buildUp_or_drawDown=""
-        points=[point_index for point_index in range(len(pressure_measure))]
+        if mode=="whole_dataset":   
+            points=[point_index for point_index in range(len(pressure_measure))]
+        elif mode=="refine_detection":
+            points=[]
+            for detected_points in self.detectedpoints.values():
+                points.extend(detected_points)
+        else:
+            print("check the mode, it must be 'whole_dataset' or 'refine_detection'...")
+        #calculate the parameters for points to be predicted
         parameters_allCurves=self.produce_parameters_givenPoints(pressure_measure,
                                                                  pressure_time,
                                                                  points,
                                                                  self.time_halfWindow_forPredict,
                                                                  None,
                                                                  fitting_type)
-        
-        self.get_tangents_twoPatterns()
+          
         tangent_forPredict=self.get_tangent(parameters_allCurves)
         
         self.tangent_forPredict=tangent_forPredict
