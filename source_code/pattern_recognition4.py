@@ -57,7 +57,7 @@ def log_func_wrapper(x,a,b,c,d):
 
 class PatternRecognition:
     def __init__(self, 
-                 point_halfWindow:int=3,
+                 point_halfWindow:int=8,
                  time_halfWindow_forPredict:float=0.5,
                  time_halfWindow_forLearn:float=1,
 #                  fitting_func=None,
@@ -530,8 +530,12 @@ class PatternRecognition:
             ax.plot(x_axis[0], y_borders_left[0],"k")
             ax.plot(x_axis[0], y_borders_left[1], "k")
             ax.scatter(x_axis[0],y_axis[0],s=2**2)
-            # print(pattern_name)
+            print(f"in {pattern_name} pattern")
             # print(len(x_axis[0]),len(y_axis[0]),len(y_borders_left[0]),len(y_borders_left[1]))
+            points_aboveTop=sum(y_axis[0]>y_borders_left[0])
+            points_belowBottom=sum(y_axis[0]<y_borders_left[1])
+            print("-------------left")
+            print(f"{len(x_axis[0])} points for comparison, {points_aboveTop} points are above top, {points_belowBottom} points under bottom")
                 
         
             #right
@@ -540,6 +544,11 @@ class PatternRecognition:
             ax.plot(x_axis[1], y_borders_right[0], "k")
             ax.plot(x_axis[1], y_borders_right[1], "k")
             ax.scatter(x_axis[1],y_axis[1],s=2**2)
+            
+            points_aboveTop=sum(y_axis[1]>y_borders_right[0])
+            points_belowBottom=sum(y_axis[1]<y_borders_right[1])
+            print("-------------right")
+            print(f"{len(x_axis[1])} points for comparison, {points_aboveTop} points are above top, {points_belowBottom} points under bottom")
             
 
         plt.show()
@@ -761,15 +770,34 @@ class PatternRecognition:
             #     all(np.array(y_left[0:-1])<=np.array(y_borders["left_top"][0:-1])) and
             #     all(np.array(y_right[0:-1])>=np.array(y_borders["right_bottom"][0:-1])) and 
             #     all(np.array(y_right[0:-1])<=np.array(y_borders["right_top"][0:-1]))):
+            # if (sum(np.array(y_left[0:-1])>=np.array(y_borders["left_bottom"][0:-1]))>0.8*len(y_left[0:-1]) and 
+            #     sum(np.array(y_left[0:-1])<=np.array(y_borders["left_top"][0:-1]))>0.8*len(y_left[0:-1]) and
+            #     sum(np.array(y_right[0:-1])>=np.array(y_borders["right_bottom"][0:-1]))>0.8*len(y_right[0:-1]) and 
+            #     sum(np.array(y_right[0:-1])<=np.array(y_borders["right_top"][0:-1]))>0.8*len(y_right[0:-1]) and 
+            #     ((pattern_name==self.pattern_names[0] and second_order_derivative>0.05*self.std_2) 
+            #      or 
+            #      (pattern_name==self.pattern_names[1] and second_order_derivative<0.05*self.std_2)) ):
             if (sum(np.array(y_left[0:-1])>=np.array(y_borders["left_bottom"][0:-1]))>0.8*len(y_left[0:-1]) and 
                 sum(np.array(y_left[0:-1])<=np.array(y_borders["left_top"][0:-1]))>0.8*len(y_left[0:-1]) and
                 sum(np.array(y_right[0:-1])>=np.array(y_borders["right_bottom"][0:-1]))>0.8*len(y_right[0:-1]) and 
-                sum(np.array(y_right[0:-1])<=np.array(y_borders["right_top"][0:-1]))>0.8*len(y_right[0:-1]) and 
-                abs(second_order_derivative)>0.05*self.std_2):
+                sum(np.array(y_right[0:-1])<=np.array(y_borders["right_top"][0:-1]))>0.8*len(y_right[0:-1]) ):
+                
+            
+            ##conbine with tangent prediction               
+            # if (all(np.array(y_left[0:-1])>=np.array(y_borders["left_bottom"][0:-1])) and 
+            #     all(np.array(y_left[0:-1])<=np.array(y_borders["left_top"][0:-1])) and
+            #     all(np.array(y_right[0:-1])>=np.array(y_borders["right_bottom"][0:-1])) and 
+            #     all(np.array(y_right[0:-1])<=np.array(y_borders["right_top"][0:-1])) and 
+            #     ((pattern_name==self.pattern_names[0] and second_order_derivative>0.05*self.std_2) 
+            #      or 
+            #      (pattern_name==self.pattern_names[1] and second_order_derivative<0.05*self.std_2))):
 
                 return pattern_name
-             
-        return "Not breakpoint"
+            
+            return "Not breakpoint"
+            
+            
+        
         
     def predict(self,pressure_measure,pressure_time,second_order_derivative):
         #store border for every point
@@ -810,6 +838,8 @@ class PatternRecognition:
                              "drawDown":detectedpoints_drawDown}
             
         self.data_forPredict=pd.concat([self.curveData, self.borderData], axis=1)
+        
+        detectedpoints_buildUp,detectedpoints_drawDown=self.refine_detectedPoints(pressure_measure,pressure_time)
         return detectedpoints_buildUp,detectedpoints_drawDown
     
     def get_tangent(self,parameters_allCurves:pd.DataFrame)->pd.DataFrame:
@@ -870,7 +900,6 @@ class PatternRecognition:
         self.tangent_forPredict=tangent_forPredict
         # print("---------==========",self.pattern_names)
         for pattern_name in self.pattern_names:
-            print("---------==========")
 
             sub_df=tangent_forPredict.loc[(tangent_forPredict["left_tangent"]>=self.tangents_twoPatterns[pattern_name]["left_bottom"]) &
                                     (tangent_forPredict["left_tangent"]<=self.tangents_twoPatterns[pattern_name]["left_top"]) &
@@ -881,6 +910,13 @@ class PatternRecognition:
             self.detectedpoints[pattern_name]=list(sub_df["point_index"])
             # print("self.detectedpoints",self.detectedpoints)
         return self.detectedpoints
+    
+    def refine_detectedPoints(self,pressure_measure,pressure_time):
+        points=[]
+        for detected_points in self.detectedpoints.values():
+            points.extend(detected_points)
+        buildUp, drawDown=self.detect_breakpoint_type(pressure_measure,pressure_time,points)
+        return buildUp, drawDown
             
         
             
