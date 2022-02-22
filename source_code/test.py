@@ -1,29 +1,25 @@
-def plot_detection_statistics(self)->None:
-    if len(self.ground_truth)==0:
-        print("No ground truth defined")
-        return None
-    
-    points_correct,points_faulty,points_missed=self.detected_points_categories_2(self.points_detected,self.ground_truth)
-    print("the number of points_correct",len(points_correct))
-    print("the number of points_faulty",len(points_faulty))
-    print("the number of points_missed",len(points_missed))
-
-    # creating the dataset for bar plot
-    data = {'points correct':round(len(points_correct)/len(self.ground_truth) ,3), 
-            'points faulty':round(len(points_faulty)/len(self.ground_truth) ,3),  
-            'points missed':round(len(points_missed)/len(self.ground_truth) ,3), }
-    bars = list(data.keys())
-    values = list(data.values())
-    
-    # creating the bar plot
-    fig = plt.figure(figsize = (7, 4))
-    plt.bar(bars, values, color=['dodgerblue','fuchsia',  'gold'])
-
-    for index, value in enumerate(values):
-        plt.text(index-0.06, value+0.01,f"{round(value*100,3)}%")
-        
-    plt.xlabel("")
-    plt.ylabel("Percentage")
-    plt.title("")
-    plt.show()
-    return None
+    def produce_parameters_givenPoints(self,pressure_measure,pressure_time,points,time_halfWindow,loadedParameters_pattern,fitting_type):
+        """
+        extract the data of the given points in the timewindow
+        and
+        calculate the parameter for all curves fitting these points
+        """
+ 
+        # self.fitting_func=polyval_func_wrapper
+#         if filePath_loadPattern!=None:
+#             self.load_pattern(filePath_loadPattern)
+#             self.PatternLoaded=True
+        # print("-----produce_parameters_givenPoints",fitting_type)
+        if fitting_type == "linear":
+            self.fitting_func=linear_func_wrapper
+        if fitting_type == "polynomial":
+            self.fitting_func=polyval_func_wrapper
+        if fitting_type == "log":
+            self.fitting_func=log_func_wrapper
+        if self.buildUp_or_drawDown!="":
+            print(f"start to learn '{self.buildUp_or_drawDown}' pattern...")
+        self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,time_halfWindow)
+        parameters_allCurves=self.calculate_Parameters_allCurve(fitting_type=fitting_type)
+        return parameters_allCurves
+        # parameters_pattern=self.calculate_parameters_pattern(fitting_type,loadedParameters_pattern)
+        # return parameters_pattern
