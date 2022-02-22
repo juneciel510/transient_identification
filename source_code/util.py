@@ -116,6 +116,7 @@ def point_dt_to_pressure(point_index:int,
         return sub_pressure_df[colum_names["pressure"]["measure"]]
     
     sub_pressure_df=pressure_df.loc[(pressure_time >= end_time) & (pressure_time <= start_time)]
+    display(sub_pressure_df)
     return sub_pressure_df[colum_names["pressure"]["measure"]]
 
 def pointInterval_to_pressure(point_index:int,
