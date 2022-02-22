@@ -24,7 +24,6 @@ data_output/illustration_PTA.m
 source_code/create_pattern-Copy7.ipynb
 source_code/create_pattern-Copy8.ipynb
 source_code/create_pattern-Copy9.ipynb
-<<<<<<< HEAD
 source_code/pattern_recognition.py
 source_code/pattern_recognition2.py
 
@@ -32,5 +31,7 @@ source_code/real_case_data-Copy5.ipynb
 source_code/real_case_data-Copy6.ipynb
 source_code/synthetic_data-Copy5.ipynb
 source_code/test.py
-=======
->>>>>>> function_2_class
+
+data_output/buildUp_pattern_recognition_100_10_100_10.pdf
+source_code/create_pattern-Copy10.ipynb
+source_code/create_pattern-Copy11.ipynb
