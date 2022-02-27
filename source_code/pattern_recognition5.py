@@ -24,7 +24,7 @@ import bisect
 
 from plot2 import plot_histogram
 
-#pattern recognition method
+
 def test_func1(x, a,b,c,d):
     y = a+b*x-c*np.exp(-d*x)
     return y
@@ -73,8 +73,6 @@ class PatternRecognition:
                  filePath_learnedPattern="../data_output/Learned_Pattern.jason",
                 ):
         
-        #to store the input groundtruth, including buildup & drawdown together
-        self.ground_truth =[]
         #to store the points for learn, classified as buildup & drawdown
         self.breakpoints_forLearn=defaultdict(list)
         # self.breakpoints_forLearn_multipleLearn=[]
@@ -90,16 +88,10 @@ class PatternRecognition:
         self.filePath_learnedPattern=filePath_learnedPattern
 
         
-        self.std_2=None
         self.buildUp_or_drawDown=""
         self.pattern_names=["buildUp","drawDown"]
         self.border_names=["left_top","left_bottom","right_top","right_bottom"]
-        # self.data_inWindow=pd.DataFrame(columns=['point_index',
-        #                                      'pressure_time_left', 
-        #                                      'pressure_measure_left',
-        #                                      'pressure_time_right', 
-        #                                      'pressure_measure_right'])
-        # self.borderData=pd.DataFrame(columns=self.border_names)
+
         self.data_forPredict=pd.DataFrame(columns=["pressure_time_left",
                                                   "pressure_measure_left",
                                                   "pressure_time_right",
@@ -108,10 +100,8 @@ class PatternRecognition:
                                                   "left_bottom",
                                                   "right_top",
                                                   "right_bottom"])
-        # self.parameters_allCurves=pd.DataFrame(columns=["point_index",
-        #                                                 "left_curves_parameters",
-        #                                                 "right_curves_parameters"])
-        #key is pattern name, value is self.parameters_allCurves
+
+        
         self.parameters_allCurves_groundTruth={"buildUp":pd.DataFrame(columns=["point_index",
                                                                                "left_curves_parameters",
                                                                                "right_curves_parameters"]), 
@@ -271,8 +261,6 @@ class PatternRecognition:
                         "pressure_measure_right":curve_pressure})
             return data
                              
-             
-
     def fit_curve(self,
                   xdata:List[float],
                   ydata:List[float],   
@@ -473,15 +461,13 @@ class PatternRecognition:
         """     
         y_allCurve_min=[]
         y_allCurve_max=[]
-        upper_bound=np.percentile(y_allCurve, percentile_upperBound, axis=0,method="normal_unbiased")
-        lower_bound=np.percentile(y_allCurve, percentile_lowerBound, axis=0,method="normal_unbiased")
+        
         for column_index in range(y_allCurve.shape[1]):
-            # plot_histogram(y_allCurve[:,column_index],title=str(column_index))
-            # print("y_allCurve[:,column]",y_allCurve[:,column_index])
-            y_allCurve_columnTruncated=[y for y in y_allCurve[:,column_index] if y>=lower_bound[column_index] and y<=upper_bound[column_index]]
-            y_allCurve_min.append(min(y_allCurve_columnTruncated))
-            y_allCurve_max.append(max(y_allCurve_columnTruncated))
-            # plot_histogram(y_allCurve_columnTruncated,title=str(column_index)+"percentiled")
+            list_max,list_min=self.truncateList_byPercentile(y_allCurve[:,column_index],
+                                                             percentile_upperBound,
+                                                             percentile_lowerBound)
+            y_allCurve_min.append(list_min)
+            y_allCurve_max.append(list_max)
         return y_allCurve_min,y_allCurve_max
     
     def find_border(self,
@@ -644,8 +630,6 @@ class PatternRecognition:
         
         print("----self.fine_tuning",self.fine_tuning)
         
-        
-        
     def detect_breakpoint_type(self,
                                pressure_measure:List[float],
                                pressure_time:List[float],
@@ -667,8 +651,7 @@ class PatternRecognition:
         """
         print("detect breakpoint type.....")
         self.buildUp_or_drawDown=""
-        parameters_allCurves=self.produce_parameters_givenPoints(self,
-                                                                 pressure_measure,
+        parameters_allCurves=self.produce_parameters_givenPoints(pressure_measure,
                                                                  pressure_time,
                                                                  points,
                                                                  self.time_halfWindow_forPredict,
@@ -704,7 +687,7 @@ class PatternRecognition:
 
         
     def choose_fittingFunction(self,
-                               fitting_type:str)->function:
+                               fitting_type:str)->Callable[..., List[float]]:
         """
         choose fitting function
         """
@@ -768,8 +751,7 @@ class PatternRecognition:
               pressure_measure:List[float],
               pressure_time:List[float],
               ground_truth:List[int],
-              fitting_type:str,
-              filePath_loadPattern=None):
+              fitting_type:str):
         """ 
         calculate parameters of fitting curves for ground truth
         assign to self.parameters_allCurves_groundTruth
@@ -782,7 +764,6 @@ class PatternRecognition:
             None
         """
         print(f"-----------------learn from ground truth, using {fitting_type} curve fitting")
-        self.ground_truth = ground_truth
         ground_truth_buildUp,ground_truth_drawDown=self.detect_breakpoint_type(pressure_measure,
                                                                            pressure_time,
                                                                            ground_truth)
@@ -861,7 +842,7 @@ class PatternRecognition:
         Args:
             pressure_measure: pressure measure for the whole dataset
             pressure_time: pressure time for the whole dataset
-            mode:  
+            mode: "whole_dataset"/ "refine_detection"
             fitting_type: the type for the fitting function            
         Returns:
             two lists for buildUp and drawDown break points indices
@@ -907,18 +888,17 @@ class PatternRecognition:
             if breakpoints_type==None:
                 continue
             else:
-                detectedpoints[pattern_name].append(point_index)
-                
-        self.detectedpoints=detectedpoints
+                detectedpoints[breakpoints_type].append(point_index)
         
-        builup, drawdown=self.detectedpoints.values()
-        print(f"----after second prediction, before refine, there are {len(builup)} detected buildup points, {len(drawdown)} drawdown detected")
+        points_buildUp,points_drawDown=detectedpoints.values()
+        print(f"----after second prediction, before refine, there are {len(points_buildUp)} detected buildup points, {len(points_drawDown)} drawdown detected")
   
         
-        builup, drawdown=self.filter_falseDetection(pressure_measure,pressure_time)
-        self.detectedpoints={"buildUp":builup,
-                        "drawDown":drawdown}
-        return builup,drawdown
+        points=points_buildUp+points_drawDown
+        points_buildUp,points_drawDown=self.detect_breakpoint_type(pressure_measure,pressure_time,points)
+        self.detectedpoints={"buildUp":points_buildUp,
+                    "drawDown":points_drawDown}
+        return points_buildUp,points_drawDown
             
     
     def get_tangent(self,
@@ -950,6 +930,17 @@ class PatternRecognition:
                                   tempList:List[float],
                                   percentile_upperBound:float,
                                   percentile_lowerBound:float)->(float,float):
+        """ 
+        removes the items of a list, which is 
+        not between the percentile_upperBound, and percentile_lowerBound,
+        then get the max and min value of the trancated list
+        Args:
+            tempList: a list for processing.
+            percentile_upperBound: upper bound of the np.percentile function
+            percentile_lowerBound: lower bound of the np.percentile function       
+        Returns:
+            the max and min value of the trancated list by percentile upper&lower bound.
+        """  
         upper_bound=np.percentile(tempList, percentile_upperBound, axis=0,method="normal_unbiased")
         lower_bound=np.percentile(tempList, percentile_lowerBound, axis=0,method="normal_unbiased")
         list_truncated=[item for item in tempList if item>=lower_bound and item<=upper_bound]
@@ -958,30 +949,52 @@ class PatternRecognition:
         return list_max,list_min
     
     def get_tangents_twoPatterns(self,fitting_type):
-    
+        """ 
+        from the groundtruth, get upperBound lowerBound of the 'buildUp' and 'drawDown'
+        Args:
+            fitting_type: the type for the fitting function        
+        Returns:
+            dictionary.
+            ----------
+            self.tangents_twoPatterns={"buildUp":{"left_top":float,
+                                               "left_bottom":float,
+                                               "right_top":float,
+                                               "right_bottom":float},
+                                    "drawDown":{"left_top":float,
+                                               "left_bottom":float,
+                                               "right_top":float,
+                                               "right_bottom":float}}
+            ----------
+        """  
         for pattern_name in self.pattern_names:
             tangent_groundTruth_buildUpOrDrawDown=self.get_tangent(self.parameters_allCurves_groundTruth[pattern_name],fitting_type)
+            
             #left side
             self.tangents_twoPatterns[pattern_name]["left_top"]=max(tangent_groundTruth_buildUpOrDrawDown["left_tangent"])
             self.tangents_twoPatterns[pattern_name]["left_bottom"]=min(tangent_groundTruth_buildUpOrDrawDown["left_tangent"])
-            
-            # percentile_upperBound,percentile_lowerBound=self.percentile_tuning[pattern_name]["left"]
-            # self.tangents_twoPatterns[pattern_name]["left_top"],self.tangents_twoPatterns[pattern_name]["left_bottom"]=self.truncateList_byPercentile(
-            #                                                         tangent_groundTruth_buildUpOrDrawDown["left_tangent"],
-            #                                                         percentile_upperBound,
-            #                                                         percentile_lowerBound)
+                    
             #right side
             self.tangents_twoPatterns[pattern_name]["right_top"]=max(tangent_groundTruth_buildUpOrDrawDown["right_tangent"])
             self.tangents_twoPatterns[pattern_name]["right_bottom"]=min(tangent_groundTruth_buildUpOrDrawDown["right_tangent"])
-            # percentile_upperBound,percentile_lowerBound=self.percentile_tuning[pattern_name]["right"]
-            # self.tangents_twoPatterns[pattern_name]["right_top"],self.tangents_twoPatterns[pattern_name]["right_bottom"]=self.truncateList_byPercentile(
-            #                                                         tangent_groundTruth_buildUpOrDrawDown["right_tangent"],
-            #                                                         percentile_upperBound,
-            #                                                         percentile_lowerBound)
 
     
-    def predict_usingTangent(self,pressure_measure,pressure_time,mode="whole_dataset",fitting_type="polynomial"):
-        # self.get_tangents_twoPatterns(fitting_type)
+    def predict_usingTangent(self,
+                             pressure_measure:List[float],
+                             pressure_time:List[float],
+                             mode="whole_dataset",
+                             fitting_type="polynomial"):
+        """ 
+        identify the breakpoints for the given dataset.
+        if the mode is "whole_dataset", check every point in the dataset
+        if the mode is "refine_detection", check the points which already detected by the previous detection.
+        Args:
+            pressure_measure: pressure measure for the whole dataset
+            pressure_time: pressure time for the whole dataset
+            mode: "whole_dataset"/ "refine_detection"
+            fitting_type: the type for the fitting function            
+        Returns:
+            two lists for buildUp and drawDown break points indices
+        """  
         self.buildUp_or_drawDown=""
         if mode=="whole_dataset":   
             points=[point_index for point_index in range(len(pressure_measure))]
@@ -991,7 +1004,7 @@ class PatternRecognition:
                 points.extend(detected_points)
         else:
             print("check the mode, it must be 'whole_dataset' or 'refine_detection'...")
-        #calculate the parameters for points to be predicted
+        
         parameters_allCurves=self.produce_parameters_givenPoints(pressure_measure,
                                                                  pressure_time,
                                                                  points,
@@ -1001,28 +1014,39 @@ class PatternRecognition:
         tangent_forPredict=self.get_tangent(parameters_allCurves,fitting_type)
         
         self.tangent_forPredict=tangent_forPredict
-        # print("---------==========",self.pattern_names)
+        
+        points_buildUp,points_drawDown=self.check_in_tangentRange(tangent_forPredict)     
+            
+        points=points_buildUp+points_drawDown
+        points_buildUp,points_drawDown=self.detect_breakpoint_type(pressure_measure,pressure_time,points)
+        self.detectedpoints={"buildUp":points_buildUp,
+                    "drawDown":points_drawDown}
+        return points_buildUp,points_drawDown
+    
+    
+    def check_in_tangentRange(self,tangent_forPredict:pd.DataFrame)->Dict[str,List[float]]:
+        """ 
+        from the tangents of points, identify the types of points
+        Args:
+            pressure_measure: pressure measure for the whole dataset
+            pressure_time: pressure time for the whole dataset
+            mode: "whole_dataset"/ "refine_detection"
+            fitting_type: the type for the fitting function            
+        Returns:
+            two lists for buildUp and drawDown break points indices
+        """  
+        
+        detectedpoints={}
         for pattern_name in self.pattern_names:
-
+    
             sub_df=tangent_forPredict.loc[(tangent_forPredict["left_tangent"]>=self.tangents_twoPatterns[pattern_name]["left_bottom"]) &
                                     (tangent_forPredict["left_tangent"]<=self.tangents_twoPatterns[pattern_name]["left_top"]) &
                                     (tangent_forPredict["right_tangent"]>=self.tangents_twoPatterns[pattern_name]["right_bottom"]) &
                                     (tangent_forPredict["right_tangent"]<=self.tangents_twoPatterns[pattern_name]["right_top"])]
 
-            # print("----pattern_name,sub_df",pattern_name,sub_df)
-            self.detectedpoints[pattern_name]=list(sub_df["point_index"])
-            # print("self.detectedpoints",self.detectedpoints)
-        buildUp, drawDown=self.filter_falseDetection(pressure_measure,pressure_time)
-        self.detectedpoints={"buildUp":buildUp,
-                    "drawDown":drawDown}
-        return buildUp, drawDown
-    
-    def filter_falseDetection(self,pressure_measure,pressure_time):
-        points=[]
-        for detected_points in self.detectedpoints.values():
-            points.extend(detected_points)
-        buildUp, drawDown=self.detect_breakpoint_type(pressure_measure,pressure_time,points)
-        return buildUp, drawDown
+            detectedpoints[pattern_name]=list(sub_df["point_index"])
+        return detectedpoints.values()
+        
             
         
             
