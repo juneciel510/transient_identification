@@ -62,7 +62,23 @@ class PlotNSave:
         rate_measure=rate_df[self.colum_names["rate"]["measure"]]
         return (pressure_time, pressure_measure, pressure_first_order_derivative,pressure_second_order_derivative,rate_time,rate_measure)
     
-    def group_index(self,data:List[int], bin_start:int, bin_end:int, bin_step:int)->List[List[int]]:
+    def group_index(self,
+                    data:List[int], 
+                    bin_start:int, 
+                    bin_end:int, 
+                    bin_step:int
+                    )->List[List[int]]:
+        """
+        for numbers in a list, devide these numbers into multiple sub lists,
+        according to the specified step
+        Args: 
+            data: a list of sorted numbers, 
+            bin_start: the start of number, 
+            bin_end: the end of number, 
+            bin_step: step
+        Returns:
+            a list contains sublists   
+        """
         x = np.array(data)
         bin_edges = np.arange(bin_start, bin_end + bin_step, bin_step)
         bin_number = bin_edges.size - 1
@@ -73,35 +89,43 @@ class PlotNSave:
         return [list(x[cond[:, i]]) for i in range(bin_number)]
 
     def detected_points_categories_2(self,points_detected,ground_truth):
-            '''
-            Classify the detected points into 3 categories: points correct, points faulty, points missed.
-            
-            if the detected point is 10 points ahead or behind the true breakpoint,
-            we think that point is correctly detected.
-            Since sometimes smoothing may cause deviation of breakpoints.
-            Args:
-            Returns:
-            ''' 
-            
-            points_faulty=points_detected.copy()
-            points_missed=ground_truth.copy()
-            points_correct=[]
-            for point_detected in points_detected:
-                for point_true in ground_truth:
-                    if abs(point_true-point_detected)<=10:
-                        points_correct.append(point_detected)
-                        points_faulty.remove(point_detected)
-                        points_missed.remove(point_true)              
-                        break
-            
-            points_correct.sort()
-            points_faulty.sort()
-            points_missed.sort()
-            return points_correct,points_faulty, points_missed
+ 
+        '''
+        Classify the detected points into 3 categories: points correct, points faulty, points missed.
+        
+        if the detected point is 10 points ahead or behind the true breakpoint,
+        we think that point is correctly detected.
+        Since sometimes smoothing may cause deviation of breakpoints.
+        Args:
+            breakpoints_detected: detected points,
+            ground_truth: the ground truth of breakpoints
+        Returns:
+            3 lists: points_correct,points_faulty, points_missed
+        ''' 
+        points_faulty=points_detected.copy()
+        points_missed=ground_truth.copy()
+        points_correct=[]
+        for point_detected in points_detected:
+            for point_true in ground_truth:
+                if abs(point_true-point_detected)<=10:
+                    points_correct.append(point_detected)
+                    points_faulty.remove(point_detected)
+                    points_missed.remove(point_true)              
+                    break
+        
+        points_correct.sort()
+        points_faulty.sort()
+        points_missed.sort()
+        return points_correct,points_faulty, points_missed
         
     def detected_points_categories(self,points_detected,ground_truth):
         '''
-
+        Classify the detected points into 3 categories: points correct, points faulty, points missed.
+        Args:
+            breakpoints_detected: detected points,
+            ground_truth: the ground truth of breakpoints
+        Returns:
+            3 lists: points_correct,points_faulty, points_missed
         '''                   
         points_correct=[point for point in points_detected if point in ground_truth]
         points_correct.sort()
@@ -113,11 +137,26 @@ class PlotNSave:
         return points_correct,points_faulty, points_missed
 
     def plot_breakpoints(self,
-                         ax,ax_index,
+                         ax:matplotlib.axes._subplots.AxesSubplot,
+                         ax_index:int,
                          pressure_df:pd.DataFrame,
                          points_detected:List[int],
                          ground_truth:List[int],
                          )->None:
+        '''
+        plot vertical lines for breakpoint.
+        if ground_truth=[], all points_detected are plot in same color.
+        otherwise, also plot points faulty and points missed in other colors.
+        Args:
+            ax: subplot
+            ax_index: index of subplot,
+            pressure_df: pd.DataFrame contains 
+                pressure measurements, pressure time, first order derivative, second order derivative
+            points_detected:a list of indices of detected points
+            ground_truth: a list of indices of ground truth points
+        Returns:
+            None
+        '''  
         
         # vline_color="cyan"
         vline_color="dodgerblue"
@@ -136,7 +175,7 @@ class PlotNSave:
                 else:
                     ax.axvline(x=pressure_time[point],color=vline_color,label='Points detected')
         
-        #if ground truth is given, plot missed points, faulty detected points as well           
+        #if ground truth is given, also plot missed points, faulty detected points using different color           
         if len(ground_truth)>0:  
             points_correct,points_faulty,points_missed=self.detected_points_categories_2(points_detected,ground_truth)
             all_points=set(points_detected+ground_truth)
@@ -161,8 +200,23 @@ class PlotNSave:
                        pressure_df:pd.DataFrame,
                        rate_df:pd.DataFrame,
                        points_detected:List[int],
-                       ground_truth:List[int],)->None: 
-        # plt.close('all')
+                       ground_truth:List[int])->None: 
+        """
+        for the given dataset, plot 4 subplots: 
+            pressure measurements
+            rate measurements
+            first order derivative
+            second order derivative
+        Args: 
+            pressure_df: pd.DataFrame contains 
+                pressure measurements, pressure time, first order derivative, second order derivative
+            rate_df:pd.DataFrame contains 
+                rate measurements, rate time
+            points_detected: a list for the indices of detected points
+            ground_truth: a list for the indices of ground truth points
+        Returns:
+            None  
+        """
         rcParams.update({'figure.autolayout': True})
         fig, axs = plt.subplots(nrows=4, sharex=True, dpi=100,figsize=(20,13), gridspec_kw={'height_ratios': [3, 3,3,3]})
         (pressure_time, 
@@ -198,9 +252,7 @@ class PlotNSave:
                                   pressure_df,
                                   points_detected,
                                   ground_truth)
-            #plot horizontal lines in subplot of pressure and rate measures
-            # if i==0:
-            #     ax.axhline(y=0,color=hline_color)
+            #only plot horizontal lines in subplot of rate measures
             if i==1:
                 ax.axhline(y=0,color=hline_color)
                 
@@ -214,12 +266,19 @@ class PlotNSave:
   
     
     def save_multi_plots(self):
+        """
+        save plots to pdf file
+        """
         pp = PdfPages(self.filename_toSave)
         for fig in self.plots_toSave:
             fig.savefig(pp, format='pdf')
         pp.close()
 
     def plot_4_metrics_details(self)->None:
+        """
+        devide the dataset into multiple plots
+        the number of plots depends on the self.data_inOneRow
+        """
         
         print(f"detected {len(self.points_detected)} points as breakpoints")
         
@@ -264,6 +323,10 @@ class PlotNSave:
 
 
     def plot_detection_statistics(self)->None:
+        """
+        statistics bar plot for the the number of 
+        ground_truth, points_correct, points_faulty, points_missed
+        """
         if len(self.ground_truth)==0:
             print("No ground truth defined")
             return None
@@ -304,7 +367,17 @@ def plot_histogram(data, xlabel:str, ylabel:str,title:str)->None:
     plt.title(title)
     plt.show
     
-def plot_nonDenoised_VS_Denoised(pressure_df,pressure_df_denoised,colum_names):
+def plot_nonDenoised_VS_Denoised(pressure_df:pd.DataFrame,
+                                 pressure_df_denoised:pd.DataFrame,
+                                 colum_names:Dict[str,Dict[str,str]]
+                                            ={"pressure":{"time":"Elapsed time",
+                                                            "measure":"Data",
+                                                            "first_order_derivative":"first_order_derivative",
+                                                            "second_order_derivative":"second_order_derivative"},
+                                                "rate":{"time":"Elapsed time","measure":"Liquid rate"}})->None:
+    """
+    line plot for both pressure measurements and denoised pressure measurements
+    """
     fig=plt.figure(figsize=(9,4))
     ax=fig.subplots()
     p=ax.plot(pressure_df[colum_names["pressure"]["time"]],pressure_df[colum_names["pressure"]["measure"]],label='raw data')
