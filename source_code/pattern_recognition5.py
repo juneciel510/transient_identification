@@ -10,19 +10,11 @@ from scipy.optimize import curve_fit
 import csv
 import json
 from collections import defaultdict
-
-import numpy as np
-import pandas as pd
-import statistics
-import matplotlib.pyplot as plt
-from matplotlib import rcParams
-from operator import itemgetter
-from typing import Callable, Dict, List, Set, Tuple
 from scipy.signal import savgol_filter
 import math 
 import bisect
 
-from plot2 import plot_histogram
+from plot import plot_histogram
 
 
 def test_func1(x, a,b,c,d):
@@ -92,14 +84,13 @@ class PatternRecognition:
         self.pattern_names=["buildUp","drawDown"]
         self.border_names=["left_top","left_bottom","right_top","right_bottom"]
 
-        self.data_forPredict=pd.DataFrame(columns=["pressure_time_left",
-                                                  "pressure_measure_left",
-                                                  "pressure_time_right",
-                                                  "pressure_measure_right",
-                                                  "left_top",
-                                                  "left_bottom",
-                                                  "right_top",
-                                                  "right_bottom"])
+        self.data_forPredict=pd.DataFrame(columns=["point_index",
+                                                   "pressure_time_left",
+                                                    "pressure_measure_left",
+                                                    "pressure_time_right",
+                                                    "pressure_measure_right",
+                                                    "buildUp",
+                                                    "drawDown"])
 
         
         self.parameters_allCurves_groundTruth={"buildUp":pd.DataFrame(columns=["point_index",
@@ -848,14 +839,13 @@ class PatternRecognition:
             two lists for buildUp and drawDown break points indices
         """     
         # self.std_2=statistics.stdev(second_order_derivative)
-        self.data_forPredict=pd.DataFrame(columns=["pressure_time_left",
-                                            "pressure_measure_left",
-                                            "pressure_time_right",
-                                            "pressure_measure_right",
-                                            "left_top",
-                                            "left_bottom",
-                                            "right_top",
-                                            "right_bottom"])
+        self.data_forPredict=pd.DataFrame(columns=["point_index",
+                                                   "pressure_time_left",
+                                                    "pressure_measure_left",
+                                                    "pressure_time_right",
+                                                    "pressure_measure_right",
+                                                    "buildUp",
+                                                    "drawDown"])
         
         if mode=="whole_dataset":   
             points=[point_index for point_index in range(len(pressure_measure))]
@@ -883,7 +873,7 @@ class PatternRecognition:
    
         detectedpoints={"buildUp":[],
                         "drawDown":[]}
-        for point_index in points:
+        for point_index in self.data_forPredict["point_index"]:
             breakpoints_type=self.check_in_pattern(self.data_forPredict,point_index)  
             if breakpoints_type==None:
                 continue

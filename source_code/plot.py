@@ -137,7 +137,7 @@ class PlotNSave:
         return points_correct,points_faulty, points_missed
 
     def plot_breakpoints(self,
-                         ax:matplotlib.axes._subplots.AxesSubplot,
+                         ax,
                          ax_index:int,
                          pressure_df:pd.DataFrame,
                          points_detected:List[int],
