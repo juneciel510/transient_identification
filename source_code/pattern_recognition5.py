@@ -154,55 +154,55 @@ class PatternRecognition:
                                     pressure_time:List[float],
                                     points:List[int],
                                     time_halfWindow:float)->pd.DataFrame: 
-            """
-            extract pressure measure & time data for 'points' 
-            in 'timewindow' 
-            if the number of points in the half timewindow is less than 'self.point_halfWindow'
-            then we extract 'self.point_halfWindow' points
+        """
+        extract pressure measure & time data for 'points' 
+        in 'timewindow' 
+        if the number of points in the half timewindow is less than 'self.point_halfWindow'
+        then we extract 'self.point_halfWindow' points
+        
+        Args:
+            pressure_measure: pressure measure for the whole dataset
+            pressure_time: pressure time for the whole dataset
+            points: a list contains index of points 
+            time_halfWindow: half timewindow
             
-            Args:
-                pressure_measure: pressure measure for the whole dataset
-                pressure_time: pressure time for the whole dataset
-                points: a list contains index of points 
-                time_halfWindow: half timewindow
+        Returns:
+            a dataframe containing five columns, each row for a point
+            -------------
+            columns=['point_index',
+                    'pressure_time_left', 
+                    'pressure_measure_left',
+                    'pressure_time_right', 
+                    'pressure_measure_right']
+            -------------
+        """
+        # print("-------start to extract points data inTimeWindow")
+        data_inWindow=pd.DataFrame(columns=['point_index',
+                                'pressure_time_left', 
+                                'pressure_measure_left',
+                                'pressure_time_right', 
+                                'pressure_measure_right'])
+        
+        for point_index in points:
+            if point_index>(len(pressure_measure)-self.point_halfWindow) or point_index<self.point_halfWindow:
+                continue
+            #convert timewindow to point window 
+            time_leftStart=pressure_time[point_index]-time_halfWindow
+            time_rightEnd=pressure_time[point_index]+time_halfWindow
+            if time_leftStart>=0 and time_rightEnd<=pressure_time[-1]:
+                halfWinow_left=point_index-bisect.bisect_left(pressure_time, time_leftStart) 
                 
-            Returns:
-                a dataframe containing five columns, each row for a point
-                -------------
-                columns=['point_index',
-                        'pressure_time_left', 
-                        'pressure_measure_left',
-                        'pressure_time_right', 
-                        'pressure_measure_right']
-                -------------
-            """
-            # print("-------start to extract points data inTimeWindow")
-            data_inWindow=pd.DataFrame(columns=['point_index',
-                                    'pressure_time_left', 
-                                    'pressure_measure_left',
-                                    'pressure_time_right', 
-                                    'pressure_measure_right'])
+                if halfWinow_left<self.point_halfWindow:
+                    halfWinow_left=self.point_halfWindow
+                
+                halfWinow_right=bisect.bisect_left(pressure_time, time_rightEnd)-1-point_index
+                if halfWinow_right<self.point_halfWindow:
+                    halfWinow_right=self.point_halfWindow
             
-            for point_index in points:
-                if point_index>(len(pressure_measure)-self.point_halfWindow) or point_index<self.point_halfWindow:
-                    continue
-                #convert timewindow to point window 
-                time_leftStart=pressure_time[point_index]-time_halfWindow
-                time_rightEnd=pressure_time[point_index]+time_halfWindow
-                if time_leftStart>=0 and time_rightEnd<=pressure_time[-1]:
-                    halfWinow_left=point_index-bisect.bisect_left(pressure_time, time_leftStart) 
-                    
-                    if halfWinow_left<self.point_halfWindow:
-                        halfWinow_left=self.point_halfWindow
-                 
-                    halfWinow_right=bisect.bisect_left(pressure_time, time_rightEnd)-1-point_index
-                    if halfWinow_right<self.point_halfWindow:
-                        halfWinow_right=self.point_halfWindow
-                
-                    data=self.extract_singlePoint_inPointWindow(pressure_measure,pressure_time,point_index,halfWinow_left,halfWinow_right)
-                
-                    data_inWindow=data_inWindow.append(data,ignore_index=True)
-            return data_inWindow
+                data=self.extract_singlePoint_inPointWindow(pressure_measure,pressure_time,point_index,halfWinow_left,halfWinow_right)
+            
+                data_inWindow=data_inWindow.append(data,ignore_index=True)
+        return data_inWindow
                 
     def extract_singlePoint_inPointWindow(self,
                                           pressure_measure:List[float],
@@ -212,45 +212,45 @@ class PatternRecognition:
                                           halfWinow_right:int
                                           )->Dict[str,List[float]]: 
 
-            """
-            extract pressure measure & time data for a single point
-            in point window  [point_index-point_halfWindow,point_index+point_halfWindow]
-          
-            Args:
-                pressure_measure: pressure measure for the whole dataset
-                pressure_time: pressure time for the whole dataset
-                point_index: index of points 
-                halfWinow_left: the number of points to be extracted on the left side of the point_index
-                halfWinow_right: the number of points to be extracted on the left side of the point_index
-                
-            Returns:
-                a dictionary, the keys() are as follows:
-                -------------
-                ['point_index',
-                'pressure_time_left', 
-                'pressure_measure_left',
-                'pressure_time_right', 
-                'pressure_measure_right']
-                -------------
-            """
-            data={"point_index":int(point_index)}
+        """
+        extract pressure measure & time data for a single point
+        in point window  [point_index-point_halfWindow,point_index+point_halfWindow]
+        
+        Args:
+            pressure_measure: pressure measure for the whole dataset
+            pressure_time: pressure time for the whole dataset
+            point_index: index of points 
+            halfWinow_left: the number of points to be extracted on the left side of the point_index
+            halfWinow_right: the number of points to be extracted on the left side of the point_index
             
-            #left side
-            sub_measure=pressure_measure[point_index+1-halfWinow_left:point_index+1]
-            sub_time=pressure_time[point_index+1-halfWinow_left:point_index+1]
-            curve_pressure=[round(measure-sub_measure[-1],6) for measure in sub_measure]
-            curve_time=[round(time-sub_time[-1],6) for time in sub_time]
-            data.update({"pressure_time_left":curve_time,
-                         "pressure_measure_left":curve_pressure})
-            
-            #right side
-            sub_measure=pressure_measure[point_index:point_index+halfWinow_right]
-            sub_time=pressure_time[point_index:point_index+halfWinow_right]
-            curve_pressure=[round(measure-sub_measure[0],6) for measure in sub_measure]
-            curve_time=[round(time-sub_time[0],6) for time in sub_time]
-            data.update({"pressure_time_right":curve_time,
-                        "pressure_measure_right":curve_pressure})
-            return data
+        Returns:
+            a dictionary, the keys() are as follows:
+            -------------
+            ['point_index',
+            'pressure_time_left', 
+            'pressure_measure_left',
+            'pressure_time_right', 
+            'pressure_measure_right']
+            -------------
+        """
+        data={"point_index":int(point_index)}
+        
+        #left side
+        sub_measure=pressure_measure[point_index+1-halfWinow_left:point_index+1]
+        sub_time=pressure_time[point_index+1-halfWinow_left:point_index+1]
+        curve_pressure=[round(measure-sub_measure[-1],6) for measure in sub_measure]
+        curve_time=[round(time-sub_time[-1],6) for time in sub_time]
+        data.update({"pressure_time_left":curve_time,
+                        "pressure_measure_left":curve_pressure})
+        
+        #right side
+        sub_measure=pressure_measure[point_index:point_index+halfWinow_right]
+        sub_time=pressure_time[point_index:point_index+halfWinow_right]
+        curve_pressure=[round(measure-sub_measure[0],6) for measure in sub_measure]
+        curve_time=[round(time-sub_time[0],6) for time in sub_time]
+        data.update({"pressure_time_right":curve_time,
+                    "pressure_measure_right":curve_pressure})
+        return data
                              
     def fit_curve(self,
                   xdata:List[float],
@@ -1046,6 +1046,8 @@ class PatternRecognition:
 
             detectedpoints[pattern_name]=list(sub_df["point_index"])
         return detectedpoints.values()
+    
+
         
             
         
