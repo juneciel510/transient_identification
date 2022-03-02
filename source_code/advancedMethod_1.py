@@ -3,8 +3,6 @@ import numpy as np
 import pandas as pd
 import math
 
-
-
 def detect_max_FOD(pressure_df:pd.DataFrame,
                    time_step:float=2,
                    colum_names:Dict[str,Dict[str,str]]

@@ -277,7 +277,8 @@ class PatternRecognition:
             parameters=np.polyfit(x,y,3)
         if fitting_type=="linear" or fitting_type=="log":
             parameters, covariance = curve_fit(fitting_func, x, y)
-        self.plot_fittingCurve(x, y,fitting_type, plot_color, *parameters)
+        if self.buildUp_or_drawDown!="":
+            self.plot_fittingCurve(x, y,fitting_type, plot_color, *parameters)
  
         return parameters
     
@@ -299,7 +300,7 @@ class PatternRecognition:
             None
         """
         fitting_func=self.choose_fittingFunction(fitting_type)
-        y_fit=fitting_func(x, *parameters)
+        y_fit=fitting_func(np.asarray(x), *parameters)
         # if fitting_type=="linear":
         #     plt.figure(figsize = (10, 10))
         #     plt.axis([-1, 1, -10, 10])
@@ -314,10 +315,14 @@ class PatternRecognition:
         #         plot_title=f"{self.buildUp_or_drawDown}---{self.ground_truth[i]}"   
         # self.plot_fittingCurve(x, y,fitting_type, plot_color, plot_title, *parameters)
         
-        if self.buildUp_or_drawDown!="":
-            plt.scatter(x=x,y=y,color=plot_color)
-            plt.plot(x, y_fit, color=plot_color,linestyle='-')
-            plt.title(self.buildUp_or_drawDown)
+        
+        plt.scatter(x=x,y=y,color=plot_color)
+        plt.plot(x, y_fit, color=plot_color,linestyle='-')
+        plt.title(self.buildUp_or_drawDown)
+        # if self.buildUp_or_drawDown!="":
+        #     plt.scatter(x=x,y=y,color=plot_color)
+        #     plt.plot(x, y_fit, color=plot_color,linestyle='-')
+        #     plt.title(self.buildUp_or_drawDown)
         # if fitting_type=="log" or fitting_type=="polynomial":
         #     plt.show()
     
@@ -895,6 +900,78 @@ class PatternRecognition:
                     "drawDown":points_drawDown}
         print(f"after second prediction, the results are filtered further, there are {len(points_buildUp)} detected buildup points, {len(points_drawDown)} drawdown detected")
         return points_buildUp,points_drawDown
+            
+    def calculte_3DegreePolynomial(self,x,parameters):
+        return 3*parameters[0]*x**2+2*parameters[1]*x+parameters[2]
+        
+    def produce_tangent_inPointWindow(self,
+                                   pressure_measure:List[float],
+                                    pressure_time:List[float],
+                                    points:List[int],
+                                    fitting_type:str,
+                                    point_halfWindow_tagentAnalyze:int,
+                                    time_halfWindow:float):
+        data_forTangentPlot=pd.DataFrame(columns=["point_index",
+                                            "pressure_time_left", 
+                                            "pressure_measure_left",
+                                            "left_curves_parameters",
+                                            "tangent_left",
+                                            "pressure_time_right",
+                                            "pressure_measure_right",
+                                            "right_curves_parameters",
+                                            "tangent_right"])
+        
+        data_inWindow=self.extract_points_inTimeWindow(pressure_measure,
+                                    pressure_time,
+                                    points,
+                                    time_halfWindow)
+        # display(data_inWindow)
+        parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type)
+        # display(parameters_allCurves)
+        
+        for index,parameters in parameters_allCurves.iterrows():
+            data={}
+            data["point_index"]=parameters["point_index"]
+            data["pressure_time_left"]=data_inWindow.iloc[index]["pressure_time_left"][-point_halfWindow_tagentAnalyze:]
+            data["pressure_time_right"]=data_inWindow.iloc[index]["pressure_time_right"][0:point_halfWindow_tagentAnalyze]
+            data["pressure_measure_left"]=data_inWindow.iloc[index]["pressure_measure_left"][-point_halfWindow_tagentAnalyze:]
+            data["pressure_measure_right"]=data_inWindow.iloc[index]["pressure_measure_right"][0:point_halfWindow_tagentAnalyze]
+            data["left_curves_parameters"]=parameters["left_curves_parameters"]
+            data["right_curves_parameters"]=parameters["right_curves_parameters"]
+            data["tangent_left"]=self.calculte_3DegreePolynomial(np.asarray(data["pressure_time_left"]),data["left_curves_parameters"])
+            data["tangent_right"]=self.calculte_3DegreePolynomial(np.asarray(data["pressure_time_right"]),data["right_curves_parameters"])
+            data_forTangentPlot=data_forTangentPlot.append(data,ignore_index=True)
+            
+        return data_forTangentPlot
+    
+    def tangentLine_func(self,x,tangent_slope,x0,y0):
+        return tangent_slope*x-tangent_slope*x0+y0
+    
+    def plot_tangent_inPointWindow(self,data_forTangentPlot,point_index):
+        plt.figure(figsize = (20, 10))
+        data_plotPoint=data_forTangentPlot.loc[data_forTangentPlot['point_index'] == point_index]
+        pressure_time=[data_plotPoint["pressure_time_left"].values[0],data_plotPoint["pressure_time_right"].values[0]]
+        pressure_measure=[data_plotPoint["pressure_measure_left"].values[0],data_plotPoint["pressure_measure_right"].values[0]]
+        parameters=[data_plotPoint["left_curves_parameters"].values[0],data_plotPoint["right_curves_parameters"].values[0]]
+        tangents=[data_plotPoint["tangent_left"].values[0],data_plotPoint["tangent_right"].values[0]]
+        fitting_type="polynomial"
+        point_colors=["green","orange"]
+        tangentLine_colors=["red","blue"]
+        for x,y,parameter,tangent,point_color,tangentLine_color in zip(pressure_time,pressure_measure,parameters,tangents,point_colors,tangentLine_colors):   
+            plt.scatter(x,y,color=point_color)
+            # self.plot_fittingCurve(x,y,fitting_type,plot_color,*parameter)
+            for i in range(len(x)):
+                plot_step=max([abs(item) for item in x])/(len(x)*2)
+                x_tangent=[x[i]-plot_step,x[i]+plot_step]
+                y_tangent=self.tangentLine_func(np.asarray(x_tangent),tangent[i],x[i],y[i])
+                plt.plot(x_tangent, y_tangent, color=tangentLine_color,linestyle='-')
+        plt.show()
+                
+            
+        # number=5
+        # x_left=np.linspace(start = data_plotPoint["pressure_time_left"][0], stop = 0, num = number)
+        # x_right=np.linspace(start = 0, stop = data_plotPoint["pressure_time_right"][-1], num = number)
+        
             
     
     def get_tangent(self,
