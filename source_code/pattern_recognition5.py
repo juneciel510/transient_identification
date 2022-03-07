@@ -850,6 +850,7 @@ class PatternRecognition:
         print("==================")
         print("start to predict using pattern...")
         # self.std_2=statistics.stdev(second_order_derivative)
+        self.buildUp_or_drawDown=""
         self.data_forPredict=pd.DataFrame(columns=["point_index",
                                                    "pressure_time_left",
                                                     "pressure_measure_left",
@@ -957,12 +958,14 @@ class PatternRecognition:
         fitting_type="polynomial"
         point_colors=["green","orange"]
         tangentLine_colors=["red","blue"]
+        print("==================")
         for x,y,parameter,tangent,point_color,tangentLine_color in zip(pressure_time,pressure_measure,parameters,tangents,point_colors,tangentLine_colors):   
             plt.scatter(x,y,color=point_color)
-            # self.plot_fittingCurve(x,y,fitting_type,plot_color,*parameter)
+            # self.plot_fittingCurve(x,y,fitting_type,point_color,*parameter)
             for i in range(len(x)):
                 plot_step=max([abs(item) for item in x])/(len(x)*2)
                 x_tangent=[x[i]-plot_step,x[i]+plot_step]
+                print("tangent[i]",tangent[i])
                 y_tangent=self.tangentLine_func(np.asarray(x_tangent),tangent[i],x[i],y[i])
                 plt.plot(x_tangent, y_tangent, color=tangentLine_color,linestyle='-')
         plt.show()
@@ -1021,7 +1024,22 @@ class PatternRecognition:
         list_min=min(list_truncated)
         return list_max,list_min
     
-    def get_tangents_twoPatterns(self,fitting_type):
+    def get_deltaTangent_criterion(self,fitting_type:str):
+        print("==================")
+        print(f"start to get get deltaTangent..., using '{fitting_type}' fitting")
+        delta_tangent=[]
+        for pattern_name in self.pattern_names:
+            tangent_groundTruth_buildUpOrDrawDown=self.get_tangent(self.parameters_allCurves_groundTruth[pattern_name],fitting_type)
+            left_tangent=tangent_groundTruth_buildUpOrDrawDown["left_tangent"]
+            right_tangent=tangent_groundTruth_buildUpOrDrawDown["right_tangent"]  
+            # display(left_tangent-right_tangent)  
+            delta_tangent.append(min(abs(left_tangent-right_tangent))) 
+        # print("delta_tangent",delta_tangent)
+        return min(delta_tangent)
+ 
+
+    
+    def get_tangents_twoPatterns(self,fitting_type:str):
         """ 
         from the groundtruth, get upperBound lowerBound of the 'buildUp' and 'drawDown'
         Args:
@@ -1052,6 +1070,49 @@ class PatternRecognition:
             self.tangents_twoPatterns[pattern_name]["right_top"]=max(tangent_groundTruth_buildUpOrDrawDown["right_tangent"])
             self.tangents_twoPatterns[pattern_name]["right_bottom"]=min(tangent_groundTruth_buildUpOrDrawDown["right_tangent"])
 
+    def check_in_deltaTangent(self,tangent_criterion:float,fitting_type:str,tangent_forPredict:pd.DataFrame):
+        breakpoints=[]
+        for index,row in tangent_forPredict.iterrows():
+            if abs(row["left_tangent"]-row["right_tangent"])>tangent_criterion:
+                breakpoints.append(row["point_index"])
+        return breakpoints
+        
+    
+    def predict_usingTangent2(self,
+                             pressure_measure:List[float],
+                             pressure_time:List[float],
+                             first_order_derivative:List[float],
+                             points:List[int],
+                             fitting_type="polynomial"):
+        print("==================")
+        print("start to predict using tangent...")
+        self.buildUp_or_drawDown=""
+        std_1=statistics.stdev(first_order_derivative)
+        # points=[point_index for point_index in range(len(second_order_derivative)) if second_order_derivative[point_index]>0.05*std_2 ]
+        filtered_points=[point_index for point_index in points if first_order_derivative[point_index]>0.02*std_1 ]
+        print("len(filtered_points)",len(filtered_points))
+        tangent_criterion=self.get_deltaTangent_criterion(fitting_type)
+        tangent_criterion=40
+        parameters_allCurves=self.produce_parameters_givenPoints(pressure_measure,
+                                                                 pressure_time,
+                                                                 filtered_points,
+                                                                 self.time_halfWindow_forPredict,
+                                                                 fitting_type)
+          
+        tangent_forPredict=self.get_tangent(parameters_allCurves,fitting_type)
+        
+        self.tangent_forPredict=tangent_forPredict
+        breakpoints=self.check_in_deltaTangent(tangent_criterion,
+                                               fitting_type,
+                                               tangent_forPredict)
+        print(f"{len(breakpoints)} breakpoints are detected by 'deltaTangent'" )
+        points_buildUp,points_drawDown=self.detect_breakpoint_type(pressure_measure,
+                                                                   pressure_time,
+                                                                   breakpoints)
+        self.detectedpoints={"buildUp":points_buildUp,
+                    "drawDown":points_drawDown}
+        return breakpoints,points_buildUp,points_drawDown
+        
     
     def predict_usingTangent(self,
                              pressure_measure:List[float],
