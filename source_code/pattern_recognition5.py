@@ -315,7 +315,7 @@ class PatternRecognition:
         fitting_func=self.choose_fittingFunction(fitting_type)
         
         if fitting_type=="polynomial":
-            parameters=np.polyfit(x,y,2)
+            parameters=np.polyfit(x,y,3)
         if fitting_type=="linear" or fitting_type=="log":
             parameters, covariance = curve_fit(fitting_func, x, y)
         if self.buildUp_or_drawDown!="":
