@@ -203,6 +203,47 @@ class PatternRecognition:
             
                 data_inWindow=data_inWindow.append(data,ignore_index=True)
         return data_inWindow
+    
+    def extract_points_inPointWindow(self,
+                                    pressure_measure:List[float],
+                                    pressure_time:List[float],
+                                    points:List[int],
+                                    point_halfWindow:int)->pd.DataFrame: 
+        """
+        extract pressure measure & time data for 'points' 
+        in 'timewindow' 
+        if the number of points in the half timewindow is less than 'self.point_halfWindow'
+        then we extract 'self.point_halfWindow' points
+        
+        Args:
+            pressure_measure: pressure measure for the whole dataset
+            pressure_time: pressure time for the whole dataset
+            points: a list contains index of points 
+            time_halfWindow: half timewindow
+            
+        Returns:
+            a dataframe containing five columns, each row for a point
+            -------------
+            columns=['point_index',
+                    'pressure_time_left', 
+                    'pressure_measure_left',
+                    'pressure_time_right', 
+                    'pressure_measure_right']
+            -------------
+        """
+        # print("-------start to extract points data inTimeWindow")
+        data_inWindow=pd.DataFrame(columns=['point_index',
+                                'pressure_time_left', 
+                                'pressure_measure_left',
+                                'pressure_time_right', 
+                                'pressure_measure_right'])
+        
+        points_valid=[point for point in points if point-point_halfWindow>=0 and point+point_halfWindow<len(pressure_measure) ]
+        for point_index in points_valid: 
+                data=self.extract_singlePoint_inPointWindow(pressure_measure,pressure_time,point_index,point_halfWindow,point_halfWindow)
+            
+                data_inWindow=data_inWindow.append(data,ignore_index=True)
+        return data_inWindow
                 
     def extract_singlePoint_inPointWindow(self,
                                           pressure_measure:List[float],
@@ -274,7 +315,7 @@ class PatternRecognition:
         fitting_func=self.choose_fittingFunction(fitting_type)
         
         if fitting_type=="polynomial":
-            parameters=np.polyfit(x,y,3)
+            parameters=np.polyfit(x,y,2)
         if fitting_type=="linear" or fitting_type=="log":
             parameters, covariance = curve_fit(fitting_func, x, y)
         if self.buildUp_or_drawDown!="":
@@ -315,9 +356,10 @@ class PatternRecognition:
         #         plot_title=f"{self.buildUp_or_drawDown}---{self.ground_truth[i]}"   
         # self.plot_fittingCurve(x, y,fitting_type, plot_color, plot_title, *parameters)
         
-        
-        plt.scatter(x=x,y=y,color=plot_color)
-        plt.plot(x, y_fit, color=plot_color,linestyle='-')
+        print("parameters",parameters)
+        # plt.scatter(x=x,y=y,color=plot_color)
+        plt.scatter(x=x,y=y,label="data point",color="green")
+        plt.plot(x, y_fit, label="fitted curve",color=plot_color,linestyle='-')
         plt.title(self.buildUp_or_drawDown)
         # if self.buildUp_or_drawDown!="":
         #     plt.scatter(x=x,y=y,color=plot_color)
@@ -902,8 +944,12 @@ class PatternRecognition:
         print(f"after second prediction, the results are filtered further, there are {len(points_buildUp)} detected buildup points, {len(points_drawDown)} drawdown detected")
         return points_buildUp,points_drawDown
             
-    def calculte_3DegreePolynomial(self,x,parameters):
-        return 3*parameters[0]*x**2+2*parameters[1]*x+parameters[2]
+    def calculte_nDegreePolynomial(self,x,parameters):
+        slope=0.0
+        degree=len(parameters)-1
+        for i in range(degree):
+            slope=slope+(degree-i)*parameters[i]*x**(degree-i-1)
+        return slope
         
     def produce_tangent_inPointWindow(self,
                                    pressure_measure:List[float],
@@ -926,6 +972,7 @@ class PatternRecognition:
                                     pressure_time,
                                     points,
                                     time_halfWindow)
+        data_inWindow=self.extract_points_inPointWindow(pressure_measure,pressure_time,points,self.point_halfWindow)
         # display(data_inWindow)
         parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type)
         # display(parameters_allCurves)
@@ -939,8 +986,8 @@ class PatternRecognition:
             data["pressure_measure_right"]=data_inWindow.iloc[index]["pressure_measure_right"][0:point_halfWindow_tagentAnalyze]
             data["left_curves_parameters"]=parameters["left_curves_parameters"]
             data["right_curves_parameters"]=parameters["right_curves_parameters"]
-            data["tangent_left"]=self.calculte_3DegreePolynomial(np.asarray(data["pressure_time_left"]),data["left_curves_parameters"])
-            data["tangent_right"]=self.calculte_3DegreePolynomial(np.asarray(data["pressure_time_right"]),data["right_curves_parameters"])
+            data["tangent_left"]=self.calculte_nDegreePolynomial(np.asarray(data["pressure_time_left"]),data["left_curves_parameters"])
+            data["tangent_right"]=self.calculte_nDegreePolynomial(np.asarray(data["pressure_time_right"]),data["right_curves_parameters"])
             data_forTangentPlot=data_forTangentPlot.append(data,ignore_index=True)
             
         return data_forTangentPlot
@@ -958,16 +1005,16 @@ class PatternRecognition:
         fitting_type="polynomial"
         point_colors=["green","orange"]
         tangentLine_colors=["red","blue"]
-        print("==================")
+        print("=======point_index===========",point_index)
         for x,y,parameter,tangent,point_color,tangentLine_color in zip(pressure_time,pressure_measure,parameters,tangents,point_colors,tangentLine_colors):   
             plt.scatter(x,y,color=point_color)
-            # self.plot_fittingCurve(x,y,fitting_type,point_color,*parameter)
+            self.plot_fittingCurve(x,y,fitting_type,"yellow",*parameter)
             for i in range(len(x)):
                 plot_step=max([abs(item) for item in x])/(len(x)*2)
                 x_tangent=[x[i]-plot_step,x[i]+plot_step]
-                print("tangent[i]",tangent[i])
+                print(f"tangent[{i}]:{tangent[i]}")
                 y_tangent=self.tangentLine_func(np.asarray(x_tangent),tangent[i],x[i],y[i])
-                plt.plot(x_tangent, y_tangent, color=tangentLine_color,linestyle='-')
+                plt.plot(x_tangent, y_tangent, label="tangent line",color=tangentLine_color,linestyle='-')
         plt.show()
                 
             
@@ -992,7 +1039,7 @@ class PatternRecognition:
         """  
         #for polynomial fit the third parameter is the tangent
         if fitting_type=="polynomial":
-            n=2
+            n=len(parameters_allCurves["left_curves_parameters"][0])-2
         elif fitting_type=="linear":
             n=0 
         else:  
@@ -1091,13 +1138,16 @@ class PatternRecognition:
         # points=[point_index for point_index in range(len(second_order_derivative)) if second_order_derivative[point_index]>0.05*std_2 ]
         filtered_points=[point_index for point_index in points if first_order_derivative[point_index]>0.02*std_1 ]
         print("len(filtered_points)",len(filtered_points))
-        tangent_criterion=self.get_deltaTangent_criterion(fitting_type)
+        # tangent_criterion=self.get_deltaTangent_criterion(fitting_type)
         tangent_criterion=40
-        parameters_allCurves=self.produce_parameters_givenPoints(pressure_measure,
-                                                                 pressure_time,
-                                                                 filtered_points,
-                                                                 self.time_halfWindow_forPredict,
-                                                                 fitting_type)
+        data_inWindow=self.extract_points_inPointWindow(pressure_measure,pressure_time,points,self.point_halfWindow)
+        display(data_inWindow)
+        parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type=fitting_type)
+        # parameters_allCurves=self.produce_parameters_givenPoints(pressure_measure,
+        #                                                          pressure_time,
+        #                                                          filtered_points,
+        #                                                          self.time_halfWindow_forPredict,
+        #                                                          fitting_type)
           
         tangent_forPredict=self.get_tangent(parameters_allCurves,fitting_type)
         
