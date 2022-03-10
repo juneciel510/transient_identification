@@ -42,6 +42,8 @@ class PatternRecognition:
     """
     A class to learn pattern from ground_truth of PDG pressure data.
     And predict the buildUp and drawDown points for a given dataset.
+    Args:
+    Returns:
     """
     def __init__(self, 
                  point_halfWindow:int=8,
