@@ -1,9 +1,9 @@
-Finshed:
-Startpoint method
-Baseline method
-Pattern recognition method & tangent method
+`Finshed:`</br>
+Startpoint method</br>
+Baseline method</br>
+Pattern recognition method & tangent method</br>
 
-To-do:
-Combine different methods
-Feature-based machine learning method
-Backend, frontend, API
+`To-do:`</br>
+Combine different methods</br>
+Feature-based machine learning method</br>
+Backend, frontend, API</br>
