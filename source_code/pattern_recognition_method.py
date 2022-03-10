@@ -968,7 +968,7 @@ class PatternRecognition:
                                     fitting_type:str,
                                     time_halfWindow:float=None,
                                     point_halfWindow:int=None,
-                                    point_halfWindow_tagentPlot:int=5)->(pd.DataFrame,pd.DataFrame):
+                                    point_halfWindow_tagentPlot:int=5)->(pd.DataFrame,pd.DataFrame,pd.DataFrame):
         data_forTangentPlot=pd.DataFrame(columns=["point_index",
                                             "pressure_time_left", 
                                             "pressure_measure_left",
