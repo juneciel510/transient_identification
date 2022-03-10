@@ -9,6 +9,37 @@ from operator import itemgetter
 from typing import Callable, Dict, List, Set, Tuple
 
 class PlotNSave:
+    """
+    plot the given dataset and the detected points
+    if the ground truth points is given,
+    plot the false detection in purple color, missed detection in golden color.
+    Args:
+        pressure_df: contains 4 columns: 
+                        pressure measurements,
+                        pressure time, 
+                        first order derivative, 
+                        second order derivative
+        rate_df: contains 2 columns:
+                        flow rate measurements,
+                        flow rate time
+        points_detected: indices of detected points
+        ground_truth: indices of ground truth points
+        data_inOneRow: the number of data points in one row of the plot
+        plot_name: the name of the plot
+        filename_toSave_whole: the file name to save the figure in which all dataset are plotted in one row
+                        if do not need to save the figure, let it to be ""
+        filename_toSave_details: the file name to save the figure in which dataset are plotted in multiple rows,
+                        the number of points in each row is detemined by arg 'data_inOneRow'
+                        if do not need to save the figure, let it to be ""
+        plot_statistics:set it True if the statistics of detected points needed,otherwise False
+        plot_whole:set it True if want to plot to plot the whole dataset in one row
+        plot_details:set it True if want to plot the whole dataset into multiple rows,
+                        the number of points in each row is detemined by arg 'data_inOneRow'
+        colum_names: the column names of the pressure dataframe and rate dataframe
+               
+    Returns:
+        None
+    """
     def __init__(self, 
                    pressure_df:pd.DataFrame,
                    rate_df:pd.DataFrame,
@@ -16,7 +47,8 @@ class PlotNSave:
                    ground_truth:List[int],
                    data_inOneRow:int,
                    plot_name:str,
-                   filename_toSave:str="",
+                   filename_toSave_whole:str="",
+                   filename_toSave_details:str="",
                    plot_statistics:bool=True,
                    plot_whole:bool=True,
                    plot_details:bool=True,
@@ -33,7 +65,8 @@ class PlotNSave:
         self.ground_truth=ground_truth
         self.data_inOneRow=data_inOneRow
         self.plot_name=plot_name
-        self.filename_toSave=filename_toSave
+        self.filename_toSave_whole=filename_toSave_whole
+        self.filename_toSave_details=filename_toSave_details
         self.colum_names=colum_names
         self.plot_statistics=plot_statistics
         self.plot_whole=plot_whole
@@ -47,7 +80,8 @@ class PlotNSave:
             self.plot_4_metrics(self.pressure_df,
                                 self.rate_df,
                                 self.points_detected,
-                                self.ground_truth)
+                                self.ground_truth, 
+                                filename_toSave_whole!="")
         if self.plot_details:
             self.plot_4_metrics_details()
     
@@ -200,7 +234,8 @@ class PlotNSave:
                        pressure_df:pd.DataFrame,
                        rate_df:pd.DataFrame,
                        points_detected:List[int],
-                       ground_truth:List[int])->None: 
+                       ground_truth:List[int],
+                       plot_save:bool=False)->None: 
         """
         for the given dataset, plot 4 subplots: 
             pressure measurements
@@ -261,7 +296,12 @@ class PlotNSave:
         fig.suptitle(f'{self.plot_name}--Row {len(self.plots_toSave)}', 
             **{'family': 'Arial Black', 'size': 22, 'weight': 'bold'},x=0.5, y=0.98)
         plt.show()       
-        # plt.close()
+        print("plot_save",plot_save)
+        if plot_save:
+            print("save whole....")
+            pp = PdfPages(self.filename_toSave_whole)
+            fig.savefig(pp, format='pdf')
+            pp.close()
         return None
   
     
