@@ -32,7 +32,7 @@ class PlotNSave:
                         the number of points in each row is detemined by arg 'data_inOneRow'
                         if do not need to save the figure, let it to be ""
         plot_statistics:set it True if the statistics of detected points needed,otherwise False
-        plot_whole:set it True if want to plot to plot the whole dataset in one row
+        plot_whole:set it True if want to plot the whole dataset in one row
         plot_details:set it True if want to plot the whole dataset into multiple rows,
                         the number of points in each row is detemined by arg 'data_inOneRow'
         colum_names: the column names of the pressure dataframe and rate dataframe
@@ -76,14 +76,13 @@ class PlotNSave:
         print("---plotting...")
         if self.plot_statistics:
             self.plot_detection_statistics()
-        if self.plot_whole:
-            self.plot_4_metrics(self.pressure_df,
+        self.plot_4_metrics(self.pressure_df,
                                 self.rate_df,
                                 self.points_detected,
                                 self.ground_truth, 
+                                self.plot_whole,
                                 filename_toSave_whole!="")
-        if self.plot_details:
-            self.plot_4_metrics_details()
+        self.plot_4_metrics_details(self.plot_details)
     
     def get_metrics(self, 
                     pressure_df:pd.DataFrame,
@@ -235,6 +234,7 @@ class PlotNSave:
                        rate_df:pd.DataFrame,
                        points_detected:List[int],
                        ground_truth:List[int],
+                       plot_show:bool=True,
                        plot_save:bool=False)->None: 
         """
         for the given dataset, plot 4 subplots: 
@@ -295,26 +295,30 @@ class PlotNSave:
         self.plots_toSave.append(fig)
         fig.suptitle(f'{self.plot_name}--Row {len(self.plots_toSave)}', 
             **{'family': 'Arial Black', 'size': 22, 'weight': 'bold'},x=0.5, y=0.98)
-        plt.show()       
-        print("plot_save",plot_save)
+        if plot_show:
+            plt.show()       
+        # print("plot_save",plot_save)
         if plot_save:
             print("save whole....")
             pp = PdfPages(self.filename_toSave_whole)
             fig.savefig(pp, format='pdf')
             pp.close()
+            
+        plt.close(fig)
         return None
   
     
-    def save_multi_plots(self):
+    def save_multi_plots(self,filename_toSave):
         """
         save plots to pdf file
         """
-        pp = PdfPages(self.filename_toSave)
+        pp = PdfPages(filename_toSave)
         for fig in self.plots_toSave:
             fig.savefig(pp, format='pdf')
         pp.close()
 
-    def plot_4_metrics_details(self)->None:
+    def plot_4_metrics_details(self,
+                               plot_show:bool=True)->None:
         """
         devide the dataset into multiple plots
         the number of plots depends on the self.data_inOneRow
@@ -353,11 +357,12 @@ class PlotNSave:
             self.plot_4_metrics(sub_pressure_df,
                         sub_rate_df,
                         sub_breakpoints,
-                        sub_ground_truth)
+                        sub_ground_truth,
+                        plot_show)
         
         #save multifigs
-        if self.filename_toSave!="":
-            self.save_multi_plots()
+        if self.filename_toSave_details!="":
+            self.save_multi_plots(self.filename_toSave_details)
         return None  
 
 

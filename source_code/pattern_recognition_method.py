@@ -71,7 +71,7 @@ class PatternRecognition:
         self.breakpoints_forLearn=defaultdict(list)
         # self.breakpoints_forLearn_multipleLearn=[]
         #to store the points predicted 
-        self.detectedpoints=defaultdict(list)
+        # self.detectedpoints=defaultdict(list)
         self.point_halfWindow=point_halfWindow
         #time window for learn
         self.time_halfWindow_forLearn=time_halfWindow_forLearn
@@ -123,8 +123,8 @@ class PatternRecognition:
                                                "right_bottom":None}}
         
         self.tangent_forPredict=pd.DataFrame(columns=['point_index',
-                                                'left_tangent', 
-                                                'right_tangent'])
+                                                'tangent_left', 
+                                                'tangent_right'])
             
         self.for_tuning={"buildUp":{"left_top":[],
                                     "left_bottom":[],
@@ -299,7 +299,8 @@ class PatternRecognition:
                   xdata:List[float],
                   ydata:List[float],   
                   fitting_type:str,
-                  plot_color:str)->List[float]:
+                  plot_color:str,
+                  polynomial_order:int)->List[float]:
         """
         curve fit and plot xdata, ydata and their fitted funtion
         Args: 
@@ -307,6 +308,7 @@ class PatternRecognition:
             ydata: y coordinate data
             fitting_type: the type of fitting function
             plot_color: plot color
+            polynomial_order: if the fitting type is "polynomial", you can specify the order by setting this argument
         Returns:
             the parameters of the fitted curve
         """
@@ -317,7 +319,7 @@ class PatternRecognition:
         fitting_func=self.choose_fittingFunction(fitting_type)
         
         if fitting_type=="polynomial":
-            parameters=np.polyfit(x,y,5)
+            parameters=np.polyfit(x,y,polynomial_order)
         if fitting_type=="linear" or fitting_type=="log":
             parameters, covariance = curve_fit(fitting_func, x, y)
         if self.buildUp_or_drawDown!="":
@@ -370,7 +372,7 @@ class PatternRecognition:
         # if fitting_type=="log" or fitting_type=="polynomial":
         #     plt.show()
     
-    def calculate_Parameters_allCurve(self,data_inWindow:pd.DataFrame,fitting_type:str)->pd.DataFrame:
+    def calculate_Parameters_allCurve(self,data_inWindow:pd.DataFrame,fitting_type:str,polynomial_order:int =3)->pd.DataFrame:
         """
         for data in window (all given points), calculate the parameters of all fitted curves
         Args: 
@@ -396,14 +398,14 @@ class PatternRecognition:
             xdata=data_inWindow["pressure_time_left"][i]
             ydata=data_inWindow["pressure_measure_left"][i]
             plot_color="yellow"  
-            curveLeft_parameters.append(self.fit_curve(xdata,ydata,fitting_type,plot_color))
+            curveLeft_parameters.append(self.fit_curve(xdata,ydata,fitting_type,plot_color,polynomial_order))
 
             
             #right side
             xdata=data_inWindow["pressure_time_right"][i]
             ydata=data_inWindow["pressure_measure_right"][i]           
             plot_color="blue" 
-            curveRight_parameters.append(self.fit_curve(xdata,ydata,fitting_type,plot_color))
+            curveRight_parameters.append(self.fit_curve(xdata,ydata,fitting_type,plot_color,polynomial_order))
             
         parameters_allCurves=pd.DataFrame({"point_index":data_inWindow["point_index"].values,
                                            "left_curves_parameters":curveLeft_parameters,
@@ -474,10 +476,10 @@ class PatternRecognition:
             parameters_pattern[left_or_right+"_bottom"]=left_parameters_pattern["bottom"]
             
         
-        self.legend_without_duplicate_labels(fig)
+        self.legend_unique_labels(fig)
         return parameters_pattern
         
-    def legend_without_duplicate_labels(self,figure):
+    def legend_unique_labels(self,figure):
         handles, labels = plt.gca().get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
         figure.legend(by_label.values(), by_label.keys(),shadow=True, fontsize='large')
@@ -518,7 +520,8 @@ class PatternRecognition:
                     percentile_lowerBound:float,
                     fine_tuning_max:float,
                     fine_tuning_min:float,
-                    plot_title="")->Dict[str,List[float]]:
+                    plot_title="",
+                    polynomial_order:int =3)->Dict[str,List[float]]:
             
         """
         find top border and bottom border for all curves
@@ -541,8 +544,8 @@ class PatternRecognition:
         y_allCurve_max=np.asarray(y_allCurve_max)*fine_tuning_max
         # plt.figure(figsize = (20, 10))
         plot_color="green"
-        parameters_half_pattern["top"]=self.fit_curve(x,y_allCurve_max,fitting_type,plot_color)
-        parameters_half_pattern["bottom"]=self.fit_curve(x,y_allCurve_min,fitting_type,plot_color)
+        parameters_half_pattern["top"]=self.fit_curve(x,y_allCurve_max,fitting_type,plot_color,polynomial_order)
+        parameters_half_pattern["bottom"]=self.fit_curve(x,y_allCurve_min,fitting_type,plot_color,polynomial_order)
         
         return parameters_half_pattern
     
@@ -649,9 +652,10 @@ class PatternRecognition:
 
     
     
-    def tuning(self):
+    def tuning(self,
+               detected_buildUp:List[int],
+               detected_drawDown:List[int]):
         groundTruth_buildUp,groundTruth_drawDown=self.breakpoints_forLearn.values()
-        detected_buildUp,detected_drawDown=self.detectedpoints.values()
         buildUp_notDetected=[buildUp for buildUp in groundTruth_buildUp if buildUp not in detected_buildUp]
         drawDown_notDetected=[drawDown for drawDown in groundTruth_drawDown if drawDown not in detected_drawDown]
         
@@ -691,11 +695,9 @@ class PatternRecognition:
         print("=======================")
         print("detect breakpoint type.....")
         self.buildUp_or_drawDown=""
-        parameters_allCurves=self.produce_parameters_givenPoints(pressure_measure,
-                                                                 pressure_time,
-                                                                 points,
-                                                                 self.time_halfWindow_forPredict,
-                                                                 fitting_type="linear")
+        data_inWindow=self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,self.time_halfWindow_forPredict)
+        parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type="linear")  
+
         breakpoint_buildUp=[]
         breakpoint_drawDown=[]
         for index,parameter in parameters_allCurves.iterrows():
@@ -741,37 +743,37 @@ class PatternRecognition:
             print('fitting type must be "linear", "polynomial" or "log"')
         return fitting_func
     
-    def produce_parameters_givenPoints(self,
-                                       pressure_measure:List[float],
-                                        pressure_time:List[float],
-                                        points:List[int],
-                                        time_halfWindow:float,
-                                        fitting_type:str)->pd.DataFrame:
-        """
-        extract the data of the given points in the timewindow
-        and
-        calculate the parameter for all curves fitting these points
-        Args:
-            pressure_measure: pressure measure for the whole dataset
-            pressure_time: pressure time for the whole dataset
-            points: a list contains index of points 
-            time_halfWindow: half timewindow
-            fitting_type: the type for the fitting function
+    # def produce_parameters_givenPoints(self,
+    #                                    pressure_measure:List[float],
+    #                                     pressure_time:List[float],
+    #                                     points:List[int],
+    #                                     time_halfWindow:float,
+    #                                     fitting_type:str)->pd.DataFrame:
+    #     """
+    #     extract the data of the given points in the timewindow
+    #     and
+    #     calculate the parameter for all curves fitting these points
+    #     Args:
+    #         pressure_measure: pressure measure for the whole dataset
+    #         pressure_time: pressure time for the whole dataset
+    #         points: a list contains index of points 
+    #         time_halfWindow: half timewindow
+    #         fitting_type: the type for the fitting function
                 
-        Returns:
-            a dataframe containing 3 columns, each row for a point
-            -------------
-            ["point_index", 
-            "left_curves_parameters",
-            "right_curves_parameters"]
-            -------------
-        """
-        if self.buildUp_or_drawDown!="":
-            print("=============")
-            print(f"start to learn '{self.buildUp_or_drawDown}' pattern...")
-        data_inWindow=self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,time_halfWindow)
-        parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type=fitting_type)
-        return parameters_allCurves
+    #     Returns:
+    #         a dataframe containing 3 columns, each row for a point
+    #         -------------
+    #         ["point_index", 
+    #         "left_curves_parameters",
+    #         "right_curves_parameters"]
+    #         -------------
+    #     """
+    #     if self.buildUp_or_drawDown!="":
+    #         print("=============")
+    #         print(f"start to learn '{self.buildUp_or_drawDown}' pattern...")
+    #     data_inWindow=self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,time_halfWindow)
+    #     parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type=fitting_type)
+    #     return parameters_allCurves
  
         
     def get_pattern(self,
@@ -821,11 +823,9 @@ class PatternRecognition:
 
         for points,buildUp_or_drawDown in zip(allPoints, self.pattern_names):
             self.buildUp_or_drawDown=buildUp_or_drawDown
-            self.parameters_allCurves_groundTruth[buildUp_or_drawDown]= self.produce_parameters_givenPoints(pressure_measure,
-                                                                pressure_time,
-                                                                points,
-                                                                self.time_halfWindow_forLearn,
-                                                                fitting_type)
+            data_inWindow=self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,self.time_halfWindow_forLearn)
+            self.parameters_allCurves_groundTruth[buildUp_or_drawDown]=self.calculate_Parameters_allCurve(data_inWindow,fitting_type=fitting_type)
+    
         
 
     def sav_pattern(self):
@@ -877,17 +877,18 @@ class PatternRecognition:
     def predict_usePatternRecognition(self,
                 pressure_measure:List[float],
                 pressure_time:List[float],
-                mode="whole_dataset",
+                points:List[int],
                 fitting_type="polynomial")->(List[float],List[float]):
         """ 
         identify the breakpoints for the given dataset.
         Using the pattern recognition method.
-        if the mode is "whole_dataset", check every point in the dataset
-        if the mode is "refine_detection", check the points which already detected by the previous detection.
+        # if the mode is "whole_dataset", check every point in the dataset
+        # if the mode is "refine_detection", check the points which already detected by the previous detection.
         Args:
             pressure_measure: pressure measure for the whole dataset
             pressure_time: pressure time for the whole dataset
-            mode: "whole_dataset"/ "refine_detection"
+            points: indices of points to be identify
+            # mode: "whole_dataset"/ "refine_detection"
             fitting_type: the type for the fitting function            
         Returns:
             two lists for buildUp and drawDown break points indices
@@ -904,17 +905,17 @@ class PatternRecognition:
                                                     "buildUp",
                                                     "drawDown"])
         
-        if mode=="whole_dataset":   
-            points=[point_index for point_index in range(len(pressure_measure))]
-        elif mode=="refine_detection":
-            points=[]
-            for pattern_name, detected_points in self.detectedpoints.items():
-                points.extend(detected_points)
-                print(f"there are {len(detected_points)} '{pattern_name}' inputted for second prediction")
-                # self.points_Detectedin1=[point for point in self.breakpoints_forLearn[pattern_name] if point in detected_points]
-                # print(f"---------there are {len(self.points_Detectedin1)} points_Detectedin1")   
-        else:
-            print("check the mode, it must be 'whole_dataset' or 'refine_detection'...")
+        # if mode=="whole_dataset":   
+        #     points=[point_index for point_index in range(len(pressure_measure))]
+        # elif mode=="refine_detection":
+        #     points=[]
+        #     for pattern_name, detected_points in self.detectedpoints.items():
+        #         points.extend(detected_points)
+        #         print(f"there are {len(detected_points)} '{pattern_name}' inputted for second prediction")
+        #         # self.points_Detectedin1=[point for point in self.breakpoints_forLearn[pattern_name] if point in detected_points]
+        #         # print(f"---------there are {len(self.points_Detectedin1)} points_Detectedin1")   
+        # else:
+        #     print("check the mode, it must be 'whole_dataset' or 'refine_detection'...")
             
         borderData=pd.DataFrame()
         data_inWindow=self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,self.time_halfWindow_forPredict)
@@ -942,8 +943,6 @@ class PatternRecognition:
         
         points=points_buildUp+points_drawDown
         points_buildUp,points_drawDown=self.detect_breakpoint_type(pressure_measure,pressure_time,points)
-        self.detectedpoints={"buildUp":points_buildUp,
-                    "drawDown":points_drawDown}
         print(f"after second prediction, the results are filtered further, there are {len(points_buildUp)} detected buildup points, {len(points_drawDown)} drawdown detected")
         return points_buildUp,points_drawDown
             
@@ -968,28 +967,16 @@ class PatternRecognition:
                                     pressure_time:List[float],
                                     points:List[int],
                                     fitting_type:str,
+                                    data_type:str="single_point",
                                     time_halfWindow:float=None,
                                     point_halfWindow:int=None,
-                                    point_halfWindow_tagentPlot:int=5)->(pd.DataFrame,pd.DataFrame,pd.DataFrame):
-        data_forTangentPlot=pd.DataFrame(columns=["point_index",
-                                            "pressure_time_left", 
-                                            "pressure_measure_left",
-                                            "left_curves_parameters",
-                                            "tangentFamily_left",
-                                            "pressure_time_right",
-                                            "pressure_measure_right",
-                                            "right_curves_parameters",
-                                            "tangentFamily_right"])
-        data_forTangentPredict_average=pd.DataFrame(columns=["point_index",
-                                            "tangent_left",
-                                            "tangent_right"])
-        data_forTangentPredict_singlePoint=pd.DataFrame(columns=["point_index",
-                                            "tangent_left",
-                                            "tangent_right"])
+                                    polynomial_order:int=3,
+                                    point_halfWindow_tagentPlot:int=5
+                                    )->pd.DataFrame:
         
         if time_halfWindow!=None and point_halfWindow!=None:
             print("if you want to use time window, please set 'point_halfWindow' to be None, vice versa")
-            return None, None
+            return None
         if time_halfWindow!=None:
             data_inWindow=self.extract_points_inTimeWindow(pressure_measure,
                                         pressure_time,
@@ -1001,8 +988,10 @@ class PatternRecognition:
                                                             points,
                                                             point_halfWindow)
         # display(data_inWindow)
-        parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type)
+        parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type,polynomial_order)
         # display(parameters_allCurves)
+        
+        tangent_inWindow=pd.DataFrame()
         
         for index,parameters in parameters_allCurves.iterrows():
             pressure_time_left=data_inWindow.iloc[index]["pressure_time_left"]
@@ -1011,31 +1000,37 @@ class PatternRecognition:
             pressure_measure_right=data_inWindow.iloc[index]["pressure_measure_right"]
             tangent_left=self.calculte_tangent_nDegreePolynomial(np.asarray(pressure_time_left),parameters["left_curves_parameters"])
             tangent_right=self.calculte_tangent_nDegreePolynomial(np.asarray(pressure_time_right),parameters["right_curves_parameters"])
-            data={"point_index":parameters["point_index"],
-                "pressure_time_left":pressure_time_left[-point_halfWindow_tagentPlot:],
-                "pressure_time_right":pressure_time_right[0:point_halfWindow_tagentPlot],
-                "pressure_measure_left":pressure_measure_left[-point_halfWindow_tagentPlot:],
-                "pressure_measure_right":pressure_measure_right[0:point_halfWindow_tagentPlot],
-                "left_curves_parameters":parameters["left_curves_parameters"],
-                "right_curves_parameters":parameters["right_curves_parameters"],
-                "tangentFamily_left":tangent_left[-point_halfWindow_tagentPlot:],
-                "tangentFamily_right":tangent_right[0:point_halfWindow_tagentPlot]}
-            data_forTangentPlot=data_forTangentPlot.append(data,ignore_index=True)
             
-            tangent_left_average=sum(tangent_left)/len(tangent_left)
-            tangent_right_average=sum(tangent_right)/len(tangent_right)
-            data={"point_index":parameters["point_index"],
-                "tangent_left":tangent_left_average,
-                "tangent_right":tangent_right_average}
-            data_forTangentPredict_average=data_forTangentPredict_average.append(data,ignore_index=True)
+            if data_type=="for_plot":
+                data={"point_index":parameters["point_index"],
+                    "pressure_time_left":pressure_time_left[-point_halfWindow_tagentPlot:],
+                    "pressure_time_right":pressure_time_right[0:point_halfWindow_tagentPlot],
+                    "pressure_measure_left":pressure_measure_left[-point_halfWindow_tagentPlot:],
+                    "pressure_measure_right":pressure_measure_right[0:point_halfWindow_tagentPlot],
+                    "left_curves_parameters":parameters["left_curves_parameters"],
+                    "right_curves_parameters":parameters["right_curves_parameters"],
+                    "tangentFamily_left":tangent_left[-point_halfWindow_tagentPlot:],
+                    "tangentFamily_right":tangent_right[0:point_halfWindow_tagentPlot]}
+                tangent_inWindow=tangent_inWindow.append(data,ignore_index=True)
+            elif data_type=="average": 
+                tangent_left_average=sum(tangent_left)/len(tangent_left)
+                tangent_right_average=sum(tangent_right)/len(tangent_right)
+                data={"point_index":parameters["point_index"],
+                    "tangent_left":tangent_left_average,
+                    "tangent_right":tangent_right_average}
+                tangent_inWindow=tangent_inWindow.append(data,ignore_index=True)        
+            elif data_type=="single_point":              
+                data={"point_index":parameters["point_index"],
+                    "tangent_left":tangent_left[-1],
+                    "tangent_right":tangent_right[0]}   
+                tangent_inWindow=tangent_inWindow.append(data,ignore_index=True)      
+            else:
+                print("Invalid data_type, must be 'for_plot', 'average' or 'single_point'...")
+                return None 
+        
+            tangent_inWindow["point_index"] = tangent_inWindow["point_index"].astype(int)
             
-                        
-            data={"point_index":parameters["point_index"],
-                "tangent_left":tangent_left[-1],
-                "tangent_right":tangent_right[0]}
-            data_forTangentPredict_singlePoint=data_forTangentPredict_singlePoint.append(data,ignore_index=True)
-            
-        return data_forTangentPlot,data_forTangentPredict_average,data_forTangentPredict_singlePoint
+        return tangent_inWindow
     
     def tangentLine_func(self,x,tangent_slope,x0,y0):
         return tangent_slope*x-tangent_slope*x0+y0
@@ -1062,10 +1057,6 @@ class PatternRecognition:
                 plt.plot(x_tangent, y_tangent, label="tangent line",color=tangentLine_color,linestyle='-')
         plt.show()
                 
-            
-        # number=5
-        # x_left=np.linspace(start = data_plotPoint["pressure_time_left"][0], stop = 0, num = number)
-        # x_right=np.linspace(start = 0, stop = data_plotPoint["pressure_time_right"][-1], num = number)
         
             
     
@@ -1089,9 +1080,9 @@ class PatternRecognition:
             n=0 
         else:  
             print("please check fitting type, need to be 'polynomial' or 'linear'")
-        left_tangent=[parameters[n] for parameters in parameters_allCurves["left_curves_parameters"]] 
-        right_tangent=[parameters[n] for parameters in parameters_allCurves["right_curves_parameters"]] 
-        tangent_df=pd.DataFrame({"point_index":parameters_allCurves["point_index"],"left_tangent":left_tangent,"right_tangent":right_tangent})
+        tangent_left=[parameters[n] for parameters in parameters_allCurves["left_curves_parameters"]] 
+        tangent_right=[parameters[n] for parameters in parameters_allCurves["right_curves_parameters"]] 
+        tangent_df=pd.DataFrame({"point_index":parameters_allCurves["point_index"],"tangent_left":tangent_left,"tangent_right":tangent_right})
         return tangent_df
     
     def truncateList_byPercentile(self,
@@ -1122,10 +1113,10 @@ class PatternRecognition:
         delta_tangent=[]
         for pattern_name in self.pattern_names:
             tangent_groundTruth_buildUpOrDrawDown=self.get_tangent(self.parameters_allCurves_groundTruth[pattern_name],fitting_type)
-            left_tangent=tangent_groundTruth_buildUpOrDrawDown["left_tangent"]
-            right_tangent=tangent_groundTruth_buildUpOrDrawDown["right_tangent"]  
-            # display(left_tangent-right_tangent)  
-            delta_tangent.append(min(abs(left_tangent-right_tangent))) 
+            tangent_left=tangent_groundTruth_buildUpOrDrawDown["tangent_left"]
+            tangent_right=tangent_groundTruth_buildUpOrDrawDown["tangent_right"]  
+            # display(tangent_left-tangent_right)  
+            delta_tangent.append(min(abs(tangent_left-tangent_right))) 
         # print("delta_tangent",delta_tangent)
         return min(delta_tangent)
  
@@ -1155,19 +1146,24 @@ class PatternRecognition:
             tangent_groundTruth_buildUpOrDrawDown=self.get_tangent(self.parameters_allCurves_groundTruth[pattern_name],fitting_type)
             
             #left side
-            self.tangents_twoPatterns[pattern_name]["left_top"]=max(tangent_groundTruth_buildUpOrDrawDown["left_tangent"])
-            self.tangents_twoPatterns[pattern_name]["left_bottom"]=min(tangent_groundTruth_buildUpOrDrawDown["left_tangent"])
+            self.tangents_twoPatterns[pattern_name]["left_top"]=max(tangent_groundTruth_buildUpOrDrawDown["tangent_left"])
+            self.tangents_twoPatterns[pattern_name]["left_bottom"]=min(tangent_groundTruth_buildUpOrDrawDown["tangent_left"])
                     
             #right side
-            self.tangents_twoPatterns[pattern_name]["right_top"]=max(tangent_groundTruth_buildUpOrDrawDown["right_tangent"])
-            self.tangents_twoPatterns[pattern_name]["right_bottom"]=min(tangent_groundTruth_buildUpOrDrawDown["right_tangent"])
+            self.tangents_twoPatterns[pattern_name]["right_top"]=max(tangent_groundTruth_buildUpOrDrawDown["tangent_right"])
+            self.tangents_twoPatterns[pattern_name]["right_bottom"]=min(tangent_groundTruth_buildUpOrDrawDown["tangent_right"])
 
     def check_in_deltaTangent(self,deltaTangent_criterion:float,tangent_forPredict:pd.DataFrame):
-        breakpoints=[]
+        buildup=[]
+        drawdown=[]
         for index,row in tangent_forPredict.iterrows():
-            if abs(row["left_tangent"]-row["right_tangent"])>deltaTangent_criterion:
-                breakpoints.append(row["point_index"])
-        return breakpoints
+            if abs(row["tangent_left"]-row["tangent_right"])>deltaTangent_criterion:
+                if row["tangent_right"]>0:
+                    buildup.append(int(row["point_index"]))
+                else:
+                    drawdown.append(int(row["point_index"]))
+                    
+        return buildup,drawdown
         
     
     def predict_useDeltaTangent(self,
@@ -1175,7 +1171,13 @@ class PatternRecognition:
                              pressure_time:List[float],
                              first_order_derivative:List[float],
                              points:List[int],
-                             fitting_type="polynomial"):
+                             time_halfWindow:float=None,
+                             point_halfWindow:int=None,
+                             deltaTangent_criterion:float=40,
+                             polynomial_order:int =3,
+                             tangent_type:str="single_point",
+                             fitting_type:str="polynomial" 
+                             )->(List[int],List[int]):
         """
         predict the breakpoint use the difference between left tangent and right tangent
         """
@@ -1187,43 +1189,40 @@ class PatternRecognition:
         filtered_points=[point_index for point_index in points if first_order_derivative[point_index]>0.02*std_1 ]
         print("len(filtered_points)",len(filtered_points))
         # deltaTangent_criterion=self.get_deltadeltaTangent_criterion(fitting_type)
-        deltaTangent_criterion=40
-        data_inWindow=self.extract_points_inPointWindow(pressure_measure,pressure_time,points,self.point_halfWindow)
-        display(data_inWindow)
-        parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type=fitting_type)
-        # parameters_allCurves=self.produce_parameters_givenPoints(pressure_measure,
-        #                                                          pressure_time,
-        #                                                          filtered_points,
-        #                                                          self.time_halfWindow_forPredict,
-        #                                                          fitting_type)
-          
-        tangent_forPredict=self.get_tangent(parameters_allCurves,fitting_type)
-        
+        # data_inWindow=self.extract_points_inPointWindow(pressure_measure,pressure_time,points,point_halfWindow)
+        # parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type,polynomial_order)     
+        # tangent_forPredict_get=self.get_tangent(parameters_allCurves,fitting_type)
+        # display(tangent_forPredict_get)
+        tangent_forPredict=self.produce_tangent_inWindow(pressure_measure,
+                                                        pressure_time,
+                                                        points,
+                                                        fitting_type,
+                                                        tangent_type,
+                                                        time_halfWindow,
+                                                        point_halfWindow,
+                                                        polynomial_order)
         self.tangent_forPredict=tangent_forPredict
-        breakpoints=self.check_in_deltaTangent(deltaTangent_criterion,
+        # display(tangent_forPredict)
+        points_buildUp,points_drawDown=self.check_in_deltaTangent(deltaTangent_criterion,
                                                tangent_forPredict)
-        print(f"{len(breakpoints)} breakpoints are detected by 'deltaTangent'" )
-        points_buildUp,points_drawDown=self.detect_breakpoint_type(pressure_measure,
-                                                                   pressure_time,
-                                                                   breakpoints)
-        self.detectedpoints={"buildUp":points_buildUp,
-                    "drawDown":points_drawDown}
-        return breakpoints,points_buildUp,points_drawDown
+        print(f"detect {len(points_buildUp)} buildups and {len(points_drawDown)} drawdowns " )
+        return points_buildUp,points_drawDown
         
     
     def predict_usingTangentRange(self,
                              pressure_measure:List[float],
                              pressure_time:List[float],
-                             mode="whole_dataset",
+                             points:List[int],
                              fitting_type="polynomial"):
         """ 
         identify the breakpoints if the left tangent and right tangent are in some coresponding range.
-        if the mode is "whole_dataset", check every point in the dataset
-        if the mode is "refine_detection", check the points which already detected by the previous detection.
+        # if the mode is "whole_dataset", check every point in the dataset
+        # if the mode is "refine_detection", check the points which already detected by the previous detection.
         Args:
             pressure_measure: pressure measure for the whole dataset
             pressure_time: pressure time for the whole dataset
-            mode: "whole_dataset"/ "refine_detection"
+            points: indices of points to be identify
+            # mode: "whole_dataset"/ "refine_detection"
             fitting_type: the type for the fitting function            
         Returns:
             two lists for buildUp and drawDown break points indices
@@ -1231,21 +1230,17 @@ class PatternRecognition:
         print("==================")
         print("start to predict using tangent...")
         self.buildUp_or_drawDown=""
-        if mode=="whole_dataset":   
-            points=[point_index for point_index in range(len(pressure_measure))]
-        elif mode=="refine_detection":
-            points=[]
-            for detected_points in self.detectedpoints.values():
-                points.extend(detected_points)
-        else:
-            print("check the mode, it must be 'whole_dataset' or 'refine_detection'...")
+        # if mode=="whole_dataset":   
+        #     points=[point_index for point_index in range(len(pressure_measure))]
+        # elif mode=="refine_detection":
+        #     points=[]
+        #     for detected_points in self.detectedpoints.values():
+        #         points.extend(detected_points)
+        # else:
+        #     print("check the mode, it must be 'whole_dataset' or 'refine_detection'...")
         
-        parameters_allCurves=self.produce_parameters_givenPoints(pressure_measure,
-                                                                 pressure_time,
-                                                                 points,
-                                                                 self.time_halfWindow_forPredict,
-                                                                 fitting_type)
-          
+        data_inWindow=self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,self.time_halfWindow_forPredict)
+        parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type)        
         tangent_forPredict=self.get_tangent(parameters_allCurves,fitting_type)
         
         self.tangent_forPredict=tangent_forPredict
@@ -1254,8 +1249,6 @@ class PatternRecognition:
             
         points=points_buildUp+points_drawDown
         points_buildUp,points_drawDown=self.detect_breakpoint_type(pressure_measure,pressure_time,points)
-        self.detectedpoints={"buildUp":points_buildUp,
-                    "drawDown":points_drawDown}
         return points_buildUp,points_drawDown
     
     
@@ -1274,10 +1267,10 @@ class PatternRecognition:
         detectedpoints={}
         for pattern_name in self.pattern_names:
     
-            sub_df=tangent_forPredict.loc[(tangent_forPredict["left_tangent"]>=self.tangents_twoPatterns[pattern_name]["left_bottom"]) &
-                                    (tangent_forPredict["left_tangent"]<=self.tangents_twoPatterns[pattern_name]["left_top"]) &
-                                    (tangent_forPredict["right_tangent"]>=self.tangents_twoPatterns[pattern_name]["right_bottom"]) &
-                                    (tangent_forPredict["right_tangent"]<=self.tangents_twoPatterns[pattern_name]["right_top"])]
+            sub_df=tangent_forPredict.loc[(tangent_forPredict["tangent_left"]>=self.tangents_twoPatterns[pattern_name]["left_bottom"]) &
+                                    (tangent_forPredict["tangent_left"]<=self.tangents_twoPatterns[pattern_name]["left_top"]) &
+                                    (tangent_forPredict["tangent_right"]>=self.tangents_twoPatterns[pattern_name]["right_bottom"]) &
+                                    (tangent_forPredict["tangent_right"]<=self.tangents_twoPatterns[pattern_name]["right_top"])]
 
             detectedpoints[pattern_name]=list(sub_df["point_index"])
         return detectedpoints.values()
