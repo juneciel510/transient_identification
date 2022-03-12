@@ -2,6 +2,7 @@ from typing import Callable, Dict, List, Set, Tuple
 import numpy as np
 import pandas as pd
 import math
+import statistics
 
 def detect_max_FOD(pressure_df:pd.DataFrame,
                    time_step:float=2,
@@ -12,6 +13,10 @@ def detect_max_FOD(pressure_df:pd.DataFrame,
                                     "second_order_derivative":"second_order_derivative"},
                         "rate":{"time":"Elapsed time","measure":"Liquid rate"}}
                     )->List[int]:
+    """
+    get the indices of the points with maximum first_order_derivative in every time step
+    """
+    
     pressure_df["abs(first_order_derivative)"]=pressure_df[colum_names["pressure"]["first_order_derivative"]].abs()
     max_time=list(pressure_df[colum_names["pressure"]["time"]])[-1]
     group_number=math.ceil(max_time/time_step)
@@ -20,4 +25,8 @@ def detect_max_FOD(pressure_df:pd.DataFrame,
     sub_pressure_dfs=[pressure_df.loc[(pressure_time >= i*time_step) & (pressure_time  <= (i+1)*time_step)] for i in range(group_number)]
     #get the index of max absolute value of first order derivative
     index_max_FOD=[sub_pressure_df["abs(first_order_derivative)"].idxmax() for sub_pressure_df in sub_pressure_dfs if len(sub_pressure_df)>0]
-    return index_max_FOD
+    
+    first_order_derivative=pressure_df[colum_names["pressure"]["first_order_derivative"]]
+    std_1=statistics.stdev(first_order_derivative)
+    filtered_points=[point_index for point_index in index_max_FOD if first_order_derivative[point_index]>0.02*std_1 ]
+    return index_max_FOD,filtered_points

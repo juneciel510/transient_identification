@@ -77,6 +77,7 @@ class CurveParametersCalc:
                                 'pressure_time_right', 
                                 'pressure_measure_right'])
         
+        
         for point_index in points:
             if point_index>(len(pressure_measure)-min_pointsNumber) or point_index<min_pointsNumber:
                 continue

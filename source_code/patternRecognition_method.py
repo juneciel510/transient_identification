@@ -522,18 +522,6 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
                                                     "pressure_measure_right",
                                                     "buildUp",
                                                     "drawDown"])
-        
-        # if mode=="whole_dataset":   
-        #     points=[point_index for point_index in range(len(pressure_measure))]
-        # elif mode=="refine_detection":
-        #     points=[]
-        #     for pattern_name, detected_points in self.detectedpoints.items():
-        #         points.extend(detected_points)
-        #         print(f"there are {len(detected_points)} '{pattern_name}' inputted for second prediction")
-        #         # self.points_Detectedin1=[point for point in self.breakpoints_forLearn[pattern_name] if point in detected_points]
-        #         # print(f"---------there are {len(self.points_Detectedin1)} points_Detectedin1")   
-        # else:
-        #     print("check the mode, it must be 'whole_dataset' or 'refine_detection'...")
             
         borderData=pd.DataFrame()
         data_inWindow=self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,self.time_halfWindow_forPredict,self.min_pointsNumber)
@@ -556,16 +544,16 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
                 detectedpoints[breakpoints_type].append(point_index)
         
         points_buildUp,points_drawDown=detectedpoints.values()
-        print(f"after second prediction, there are {len(points_buildUp)} detected buildup points, {len(points_drawDown)} drawdown detected")
   
         
+        print(f"before filter, the length of buildup {points_buildUp}, the length of drawdown {points_drawDown}")
         points=points_buildUp+points_drawDown
         points_buildUp,points_drawDown=self.detect_breakpoint_type(pressure_measure,
                                                                    pressure_time,
                                                                    points,
                                                                    self.time_halfWindow_forPredict,
                                                                    self.min_pointsNumber)
-        print(f"after second prediction, the results are filtered further, there are {len(points_buildUp)} detected buildup points, {len(points_drawDown)} drawdown detected")
+        print(f"after filter, the results are filtered further, there are {len(points_buildUp)} detected buildup points, {len(points_drawDown)} drawdown detected")
         return points_buildUp,points_drawDown
             
     
