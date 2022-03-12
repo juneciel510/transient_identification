@@ -371,6 +371,7 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
         
         points_buildUp,points_drawDown=self.check_in_tangentRange(tangent_forPredict)     
             
+        print(f"before filter, the length of buildup {len(points_buildUp)}, the length of drawdown {len(points_drawDown)}")
         points=points_buildUp+points_drawDown
         points_buildUp,points_drawDown=self.detect_breakpoint_type(pressure_measure,
                                                                    pressure_time,
