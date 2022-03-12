@@ -62,7 +62,11 @@ data_output/RealField_Denoised_Derivative_Tangent/
 data_output/Derivative_Tangent_RealField_Denoised/
 patterndRrecognition_N_tangent_method.py
 
-data_output/Derivative_N_Tangent_RealField_Denoised/
-data_output/PatternRecognition/
+
 source_code/patternRecognition_method_N_tangent_method.py
-data_output/PatternRecognition_N_Tangent_RealField_Denoised/
+
+
+data_output/others/
+source_code/ignored/
+
+source_code/methods/patternRecognition_method_N_tangent_method.py
