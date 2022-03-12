@@ -160,6 +160,17 @@ def pointInterval_to_pressure(point_index:int,
         return pressure_df[colum_names["pressure"]["measure"]].iloc[point_index:point_index+delta_point]
   
     return pressure_df[colum_names["pressure"]["measure"]].iloc[point_index+delta_point:point_index]
+
+
+def print_tuning_parameters(percentile_tuning,fine_tuning):
+    txt=f"percentile_tuning======\n"
+    for key,value in percentile_tuning.items():
+        txt=txt+f"{key}:\n{value}\n"
+
+    txt+="\nfine_tuning===========\n"
+    for key,value in fine_tuning.items():
+        txt=txt+f"{key}:\n{value}\n"        
+    return txt
     
     
     

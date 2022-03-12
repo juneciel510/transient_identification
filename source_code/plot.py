@@ -47,6 +47,7 @@ class PlotNSave:
                    ground_truth:List[int],
                    data_inOneRow:int,
                    plot_name:str,
+                   txt:str="",
                    filename_toSave_whole:str="",
                    filename_toSave_details:str="",
                    plot_statistics:bool=True,
@@ -65,6 +66,7 @@ class PlotNSave:
         self.ground_truth=ground_truth
         self.data_inOneRow=data_inOneRow
         self.plot_name=plot_name
+        self.txt=txt
         self.filename_toSave_whole=filename_toSave_whole
         self.filename_toSave_details=filename_toSave_details
         self.colum_names=colum_names
@@ -307,11 +309,19 @@ class PlotNSave:
         plt.close(fig)
         return None
   
-    
+        
+    def add_page(self,txt):
+        last_page = plt.figure(figsize=(20,13))
+#     first_page.clf()
+        last_page.text(0.2,0.5,txt, transform=last_page.transFigure, size=24, ha="left" )
+        self.plots_toSave.append(last_page)
+        plt.close()
+        
     def save_multi_plots(self,filename_toSave):
         """
         save plots to pdf file
         """
+        self.add_page(self.txt)
         pp = PdfPages(filename_toSave)
         for fig in self.plots_toSave:
             fig.savefig(pp, format='pdf')
