@@ -70,3 +70,9 @@ data_output/others/
 source_code/ignored/
 
 source_code/methods/patternRecognition_method_N_tangent_method.py
+
+data_output/DeltaTangent_N_MFOD_RealField_Denoised/
+data_output/PatternRecognition_N_TangentRange_N_MOF_RealField_Denoised/
+data_output/PatternRecognition_N_TangentRange_RealField_Denoised/
+data_output/TangentRange_N_PatternRecognition_N_MOF_RealField_Denoised/
+data_output/TangentRange_N_PatternRecognition_RealField_Denoised/

@@ -171,6 +171,32 @@ def print_tuning_parameters(percentile_tuning,fine_tuning):
     for key,value in fine_tuning.items():
         txt=txt+f"{key}:\n{value}\n"        
     return txt
+
+
+class SelectRows:
+    def __init__(self,df):
+        self.df = df
+    def select_byColValue(self,col_name1,value):
+        """
+        Select Rows where Column is Equal to Specific Value
+        """
+        return self.df.loc[self.df[col_name1] == value]
+    def select_byColValueList(self,col_name1,value_list):
+        """
+        Select Rows where Column Value is in List of Values
+        """
+        return self.df.loc[self.df[col_name1].isin(value_list)]
+    def select_byMultipleColValue(self,col_name1,col_name2,value1,value2):
+        """
+        Select Rows where Column Value is in List of Values
+        """
+        return self.df.loc[(self.df[col_name1] == value1) & (self.df[col_name2] < value2)]
+    
+    def select_byIndexValueList(self,value_list):
+        """
+        Select Rows where index Value is in List of Values
+        """
+        return self.df.iloc[value_list]
     
     
     
