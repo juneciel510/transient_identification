@@ -238,11 +238,10 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
         buildup=[]
         drawdown=[]
         for index,row in tangent_forPredict.iterrows():
-            if abs(row["tangent_left"]-row["tangent_right"])>deltaTangent_criterion:
-                if row["tangent_right"]>0:
-                    buildup.append(int(row["point_index"]))
-                else:
-                    drawdown.append(int(row["point_index"]))
+            if row["tangent_right"]>0 and (row["tangent_right"]-row["tangent_left"])>deltaTangent_criterion:
+                buildup.append(int(row["point_index"]))
+            if row["tangent_right"]<0 and (row["tangent_right"]-row["tangent_left"])<-deltaTangent_criterion:
+                drawdown.append(int(row["point_index"]))
                     
         return buildup,drawdown
       
