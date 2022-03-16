@@ -24,7 +24,7 @@ def load_data_from_txt(pressure_file:str,
 
 
 
-def calculate_derivative(x_coordinate:List[float],
+def calculate_derivative_forward(x_coordinate:List[float],
                          y_coordinate:List[float]
                          )->List[float]:
     """
@@ -47,6 +47,32 @@ def calculate_derivative(x_coordinate:List[float],
 
     #calculate for the last point
     derivative[-1]=(y_coordinate[length-1]-y_coordinate[length-2])/(x_coordinate[length-1]-x_coordinate[length-2])
+    return derivative
+
+def calculate_derivative(x_coordinate:List[float],
+                         y_coordinate:List[float]
+                         )->List[float]:
+    """
+    calculate backforward derivative, the last point use the forward derivative
+    Args:
+        x_coordinate: the value of x coordinate
+        y_coordinate: the value of y coordinate
+    Returns:
+        derivative.
+    """
+    if len(x_coordinate)!=len(y_coordinate):
+        print(f"the length of x_coordinate '{len(x_coordinate)}' is not equal to the length of y_coordinate '{len(y_coordinate)}'")
+        return None
+    
+    length=len(y_coordinate)
+    
+    derivative=[0.0]*length
+    for i in range(length):
+        if i==0:     
+            derivative[i]=(y_coordinate[i+1]-y_coordinate[i])/(x_coordinate[i+1]-x_coordinate[i])
+        else:
+            derivative[i]=(y_coordinate[i]-y_coordinate[i-1])/(x_coordinate[i]-x_coordinate[i-1])
+
     return derivative
 
 

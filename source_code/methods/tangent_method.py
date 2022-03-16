@@ -140,7 +140,9 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
         return tangent_slope*x-tangent_slope*x0+y0
     
     def plot_tangent_inPointWindow(self,data_forTangentPlot,point_index):
-        plt.figure(figsize = (20, 10))
+        fig=plt.figure(figsize = (20, 10))
+        # plt.grid(True)
+        
         data_plotPoint=data_forTangentPlot.loc[data_forTangentPlot['point_index'] == point_index]
         pressure_time=[data_plotPoint["pressure_time_left"].values[0],data_plotPoint["pressure_time_right"].values[0]]
         pressure_measure=[data_plotPoint["pressure_measure_left"].values[0],data_plotPoint["pressure_measure_right"].values[0]]
@@ -149,8 +151,10 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
         fitting_type="polynomial"
         point_colors=["green","orange"]
         tangentLine_colors=["red","blue"]
+        labels=["tangentFamily_left","tangentFamily_right"]
+        
         print("=======point_index===========",point_index)
-        for x,y,parameter,tangent,point_color,tangentLine_color in zip(pressure_time,pressure_measure,parameters,tangents,point_colors,tangentLine_colors):   
+        for x,y,parameter,tangent,point_color,tangentLine_color,label in zip(pressure_time,pressure_measure,parameters,tangents,point_colors,tangentLine_colors,labels):   
             plt.scatter(x,y,color=point_color)
             self.plot_fittingCurve(x,y,fitting_type,"yellow",*parameter)
             for i in range(len(x)):
@@ -158,34 +162,39 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
                 x_tangent=[x[i]-plot_step,x[i]+plot_step]
                 print(f"tangent[{i}]:{tangent[i]}")
                 y_tangent=self.tangentLine_func(np.asarray(x_tangent),tangent[i],x[i],y[i])
-                plt.plot(x_tangent, y_tangent, label="tangent line",color=tangentLine_color,linestyle='-')
+                # y_tangent=[6 if y>6 else (-6 if y<-6 else y) for y in y_tangent]      
+                plt.plot(x_tangent, y_tangent, label=label,color=tangentLine_color,linestyle='-')
+        
+        
+        font = {'family': 'serif',
+        'color':  'darkred',
+        'weight': 'normal',
+        'size': 15,
+        }
+        plt.ylim((min(data_plotPoint["pressure_measure_left"].values[0])-1,max(data_plotPoint["pressure_measure_right"].values[0])+1))
+        # xloc=-0.5*plt.margins()[0]+min(data_plotPoint["pressure_time_left"].values[0])
+        # xloc=-plt.margins()[0]+min(data_plotPoint["pressure_time_left"].values[0])+0.1*(max(data_plotPoint["pressure_time_right"].values[0])-min(data_plotPoint["pressure_time_left"].values[0]))
+        xloc=min(data_plotPoint["pressure_time_left"].values[0])
+        # xloc=plt.margins()[0]+min(data_plotPoint["pressure_time_left"].values[0])-0.1*(max(data_plotPoint["pressure_time_right"].values[0])-min(data_plotPoint["pressure_time_left"].values[0]))
+        yloc=1+min(data_plotPoint["pressure_measure_left"].values[0])+0.9*(max(data_plotPoint["pressure_measure_right"].values[0])-min(data_plotPoint["pressure_measure_left"].values[0]))
+        plt.text(xloc,yloc,s=f"polynomial_order:{self.polynomial_order}",fontdict=font)
+        plt.annotate(f'point index: {point_index}', xy=(0,0),  xytext=(0.038, -0.7), 
+            arrowprops=dict(facecolor='black', shrink=0.05),
+             ha='center',fontsize=15
+            # arrowprops=dict(arrowstyle="->")
+            )
+        self.legend_unique_labels(fig)
+        fig.tight_layout()
         plt.show()
+        
+    def legend_unique_labels(self,figure):
+        handles, labels = plt.gca().get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))
+        figure.legend(by_label.values(), by_label.keys(),
+                      loc='center right',
+                    #   loc='lower right',
+                      shadow=True, fontsize='large')
                       
-    
-    # def get_tangent(self,
-    #                 parameters_allCurves:pd.DataFrame,
-    #                 fitting_type:str)->pd.DataFrame:
-    #     """ 
-    #     from the parameters of all fitted curves,
-    #     get the tangent values of all curves
-    #     Args:
-    #         parameters_allCurves: pd.DataFrame in which each row 
-    #         represents the parameters of left and right curves of a point
-    #         fitting_type: the type for the fitting function            
-    #     Returns:
-    #         pd.DataFrame in which each row represents the left and right tangent of a point
-    #     """  
-    #     #for polynomial fit the third parameter is the tangent
-    #     if fitting_type=="polynomial":
-    #         n=len(parameters_allCurves["left_curves_parameters"][0])-2
-    #     elif fitting_type=="linear":
-    #         n=0 
-    #     else:  
-    #         print("please check fitting type, need to be 'polynomial' or 'linear'")
-    #     tangent_left=[parameters[n] for parameters in parameters_allCurves["left_curves_parameters"]] 
-    #     tangent_right=[parameters[n] for parameters in parameters_allCurves["right_curves_parameters"]] 
-    #     tangent_df=pd.DataFrame({"point_index":parameters_allCurves["point_index"],"tangent_left":tangent_left,"tangent_right":tangent_right})
-    #     return tangent_df
     
     
     def get_deltaTangent_criterion(self,fitting_type:str):
@@ -201,38 +210,6 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
         # print("delta_tangent",delta_tangent)
         return min(delta_tangent)
  
-
-    
-    # def get_tangents_twoPatterns(self,fitting_type:str):
-    #     """ 
-    #     from the groundtruth, get upperBound lowerBound of the 'buildUp' and 'drawDown'
-    #     Args:
-    #         fitting_type: the type for the fitting function        
-    #     Returns:
-    #         dictionary.
-    #         ----------
-    #         self.tangents_twoPatterns={"buildUp":{"left_top":float,
-    #                                            "left_bottom":float,
-    #                                            "right_top":float,
-    #                                            "right_bottom":float},
-    #                                 "drawDown":{"left_top":float,
-    #                                            "left_bottom":float,
-    #                                            "right_top":float,
-    #                                            "right_bottom":float}}
-    #         ----------
-    #     """  
-    #     print("==================")
-    #     print(f"start to get tangent pattern..., using '{fitting_type}' fitting")
-    #     for pattern_name in self.pattern_names:
-    #         tangent_groundTruth_buildUpOrDrawDown=self.get_tangent(self.parameters_allCurves_groundTruth[pattern_name],fitting_type)
-            
-    #         #left side
-    #         self.tangents_twoPatterns[pattern_name]["left_top"]=max(tangent_groundTruth_buildUpOrDrawDown["tangent_left"])
-    #         self.tangents_twoPatterns[pattern_name]["left_bottom"]=min(tangent_groundTruth_buildUpOrDrawDown["tangent_left"])
-                    
-    #         #right side
-    #         self.tangents_twoPatterns[pattern_name]["right_top"]=max(tangent_groundTruth_buildUpOrDrawDown["tangent_right"])
-    #         self.tangents_twoPatterns[pattern_name]["right_bottom"]=min(tangent_groundTruth_buildUpOrDrawDown["tangent_right"])
 
     def check_in_deltaTangent(self,deltaTangent_criterion:float,tangent_forPredict:pd.DataFrame):
         buildup=[]

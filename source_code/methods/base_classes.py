@@ -218,7 +218,7 @@ class CurveParametersCalc:
         if show_plot:
             self.plot_fittingCurve(x, y,fitting_type, plot_color, *parameters)
  
-        return parameters
+        return np.round_(parameters,5)
     
     def plot_fittingCurve(self,
                           x:np.array, 
