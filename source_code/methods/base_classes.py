@@ -149,7 +149,7 @@ class CurveParametersCalc:
 
         """
         extract pressure measure & time data for a single point
-        in point window  [point_index-point_halfWindow,point_index+point_halfWindow]
+        in point window  [point_index-halfWinow_left,point_index+halfWinow_right]
         
         Args:
             pressure_measure: pressure measure for the whole dataset
