@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import math
 import statistics
+import bisect
 
 class DerivativeMethod:
     def __init__(self,
@@ -45,7 +46,27 @@ class DerivativeMethod:
             for point_index in points:
                     if abs(self.first_order_derivative[point_index])>noise_threshold*abs(self.std_1):
                             filtered_points.append(point_index)
-            return filtered_points
+            return filtered_points   
+         
+    def detect_breakpoints_singlePoint(self,
+                        #    derivative_lst:List[float],
+                           points:List[int],
+                           close_zero_threshold:float,
+                           tuning_parameters:float
+                           )->(List[int],List[int]):
+        buildUp=[]
+        drawDown=[]
+        derivative_lst=list(self.first_order_derivative)
+        for point_index in points:
+            if point_index+1>len(derivative_lst)-1:
+                continue
+            if abs(derivative_lst[point_index])<close_zero_threshold and derivative_lst[point_index+1]>tuning_parameters*abs(self.std_1):
+                    buildUp.append(point_index+1)
+            elif abs(derivative_lst[point_index])<close_zero_threshold and derivative_lst[point_index+1]<-tuning_parameters*abs(self.std_1):
+                        drawDown.append(point_index+1)
+        return buildUp, drawDown
+        
+    
             
     def avg_derivative_inTimeWindow(self,
                                         derivative_lst:List[float],
@@ -74,6 +95,7 @@ class DerivativeMethod:
             -------------
         """
         # print("-------start to extract points data inTimeWindow")
+        pressure_time=list(pressure_time)
         avg_derivative_inWindow=pd.DataFrame(columns=['point_index',
                                 'avg_derivative_left',
                                 'avg_derivative_right'])
@@ -209,14 +231,15 @@ class DerivativeMethod:
                            close_zero_threshold:float,
                            tuning_parameters:float
                            )->(List[int],List[int]):
-            buildUp=[]
-            drawDown=[]
-            for index,row in avg_derivative.iterrows():
-                    if abs(row["avg_derivative_left"])<close_zero_threshold and row["avg_derivative_right"]>tuning_parameters*abs(self.std_1):
-                            buildUp.append(row["point_index"])
-                    elif abs(row["avg_derivative_left"])<close_zero_threshold and row["avg_derivative_right"]<-tuning_parameters*abs(self.std_1):
-                            drawDown.append(row["point_index"])
-            return buildUp, drawDown
+        buildUp=[]
+        drawDown=[]
+        for index,row in avg_derivative.iterrows():
+            if abs(row["avg_derivative_left"])<close_zero_threshold and row["avg_derivative_right"]>tuning_parameters*abs(self.std_1):
+                    buildUp.append(row["point_index"])
+            elif abs(row["avg_derivative_left"])<close_zero_threshold and row["avg_derivative_right"]<-tuning_parameters*abs(self.std_1):
+                        drawDown.append(row["point_index"])
+        return buildUp, drawDown
+        
     def detect_breakpoints_2(self,
                              avg_derivative:pd.DataFrame,
                              deltaDerivative_tuning:float
@@ -224,27 +247,37 @@ class DerivativeMethod:
         buildup=[]
         drawdown=[]
         for index,row in avg_derivative.iterrows():
-                if row["avg_derivative_right"]>0 and (row["avg_derivative_right"]-row["avg_derivative_left"])>deltaDerivative_tuning*abs(self.std_1):
-                        buildup.append(int(row["point_index"]))
-                if row["avg_derivative_right"]<0 and (row["avg_derivative_right"]-row["avg_derivative_left"])<-deltaDerivative_tuning*abs(self.std_1):
-                        drawdown.append(int(row["point_index"]))
+            if row["avg_derivative_right"]>0 and (row["avg_derivative_right"]-row["avg_derivative_left"])>deltaDerivative_tuning*abs(self.std_1):
+                    buildup.append(int(row["point_index"]))
+            if row["avg_derivative_right"]<0 and (row["avg_derivative_right"]-row["avg_derivative_left"])<-deltaDerivative_tuning*abs(self.std_1):
+                    drawdown.append(int(row["point_index"]))
                 
         return buildup,drawdown
         
     def detect_breakpoints_3(self,
                              points:pd.DataFrame,
-                             point_halfWindow:int,
                              close_zero_threshold:float,
                              tuning_parameters:float,
                              noise_threshold:float=None,
+                             point_halfWindow:int=None,
+                             time_halfWindow:float=None,
                              )->(List[int],List[int]):
       
         if noise_threshold!=None:
-                points=self.FOD_above_threshold(points,noise_threshold)
-                
-        avg_derivative_inWindow=self.avg_derivative_inPointWindow(self.first_order_derivative,
-                                                                points,
-                                                                point_halfWindow)
+            points=self.FOD_above_threshold(points,noise_threshold)
+            
+        if point_halfWindow!=None and time_halfWindow!=None:
+            print("point_halfWindow and time_halfWindow, one of them should be none")
+            
+        if point_halfWindow!=None:            
+            avg_derivative_inWindow=self.avg_derivative_inPointWindow(self.first_order_derivative,
+                                                                    points,
+                                                                    point_halfWindow)
+        if time_halfWindow!=None:            
+            avg_derivative_inWindow=self.avg_derivative_inTimeWindow(self.first_order_derivative,
+                                                                     self.pressure_time,
+                                                                    points,
+                                                                    time_halfWindow)
         
         buildup,drawdown=self.detect_breakpoints(avg_derivative_inWindow,
                                                 close_zero_threshold,
