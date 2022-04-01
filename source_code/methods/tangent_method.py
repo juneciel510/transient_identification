@@ -93,9 +93,7 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
         tangent_inWindow=pd.DataFrame()
         
         for index,parameters in parameters_allCurves.iterrows():
-            
-            
-            
+               
             if data_type=="for_plot" or data_type=="average":
                 pressure_time_left=data_inWindow.iloc[index]["pressure_time_left"]
                 pressure_time_right=data_inWindow.iloc[index]["pressure_time_right"]       

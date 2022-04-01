@@ -96,3 +96,4 @@ data_output/1/
 data_output/AvgDerivative_N_MFOD/
 data_output/deltaTangent_N_MFOD/
 source_code/1_derivative_method-Copy1.ipynb
+data_output/removed_transients/
