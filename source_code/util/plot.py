@@ -284,11 +284,12 @@ class PlotNSave:
             ax.set_ylabel(y_label,fontsize=16) 
             ax.tick_params(labelbottom=True)
             # ax.xaxis.tick_top()
-            self.plot_breakpoints(ax,
-                                  i,
-                                  pressure_df,
-                                  points_detected,
-                                  ground_truth)
+            if len(points_detected)>0:
+                self.plot_breakpoints(ax,
+                                    i,
+                                    pressure_df,
+                                    points_detected,
+                                    ground_truth)
             #only plot horizontal lines in subplot of rate measures
             if i==1:
                 ax.axhline(y=0,color=hline_color)
