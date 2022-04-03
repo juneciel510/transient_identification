@@ -98,3 +98,5 @@ data_output/deltaTangent_N_MFOD/
 source_code/1_derivative_method-Copy1.ipynb
 data_output/removed_transients/
 source_code/util/data_load_N_preprocess2.py
+source_code/6_tangentDelta_N_MFOD-Copy1.ipynb
+source_code/store_transients-Copy1.ipynb

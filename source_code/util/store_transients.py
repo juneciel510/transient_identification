@@ -33,14 +33,77 @@ class StoreTransients(TangentMethod):
         self.major_buildUp=None
         self.shutInperiods=None
         self.flowingPeriods=None
-        self.breakPoints_inFlowingPeriods=None
+        self.flowingTransient_objects=None
+        self.allPointsStored=None
      
         if points_buildUp!=None and points_drawDown!=None:
             self.twoSequentIdentification(minor_threshold_shutIn,
                                           minor_threshold_Flowing)
+            self.allPointsStored=self.get_allPointsStored()
+            
         else:
             print("No points_buildUp or points_drawDown detected" )
-           
+            
+    # def find_majorDrawDown(self)->List[int]:
+    #     points_drawDown=self.points_drawDown.copy()
+        
+    #     major_drawDown=[]
+    #     while len(points_drawDown)>0:
+    #         # print("========================")
+    #         drawdown_cluster=[]
+    #         buildup_larger=list(filter(lambda i: i > points_drawDown[0], self.points_buildUp))
+            
+    #         if len(buildup_larger)==0:
+    #             break
+    #         point_nextbuildup=buildup_larger[0]
+        
+    #         while len(points_drawDown)>0:
+    #             if points_drawDown[0]>point_nextbuildup:
+    #                 break
+    #             drawdown_cluster.append(points_drawDown[0])
+    #             points_drawDown.remove(points_drawDown[0])
+                
+    #         # print("drawdown_cluster",drawdown_cluster)
+
+    #         if self.mode=="Tangent":
+    #             point_drawDown_major=self.get_point_minDeltaTangent(drawdown_cluster)
+    #             # point_drawDown_major=self.get_point_minLeftTangent(drawdown_cluster)
+    #             # print("point_drawDown_major",point_drawDown_major)
+    #         elif self.mode=="Derivative":
+    #             point_drawDown_major=self.get_point_minDerivative(drawdown_cluster)
+    #         elif self.mode=="Std":
+    #             point_drawDown_major=self.get_point_maxStd(drawdown_cluster)
+    #         else:
+    #             raise Exception("The mode must be a string 'Tangent' ,'Derivative' or 'Std'")
+    #         major_drawDown.append(point_drawDown_major)
+            
+    #     return major_drawDown
+    
+    # def find_majorBuildUp(self,major_drawDown)->List[int]:
+    #     major_buildUp=[]
+    #     for i in range(len(major_drawDown)-1):
+    #         start_point=major_drawDown[i]
+    #         end_point=major_drawDown[i+1]
+    #         sub_df_pressure=self.pressure_df.iloc[start_point:end_point]
+    #         index=sub_df_pressure.loc[sub_df_pressure[self.colum_names["pressure"]["measure"]] == min(sub_df_pressure[self.colum_names["pressure"]["measure"]])].index.tolist()[0]
+    #         major_buildUp.append(index)
+    #     return major_buildUp
+    
+    # def find_majorBuildUp(self,major_drawDown)->List[int]:
+    #     major_buildUp=[]
+    #     for i in range(len(major_drawDown)-1):
+    #         start_point=major_drawDown[i]
+    #         end_point=major_drawDown[i+1]  
+    #         points_inTwoDrawdown=[point for point in self.points_buildUp if point>start_point and point<end_point]
+                
+    #         std_points=[statistics.stdev(self.pressure_df.iloc[start_point:point][self.colum_names["pressure"]["measure"]]) for point in points_inTwoDrawdown] 
+    #         index_maxStd=std_points.index(max(std_points))
+    #         major_buildUp.append(points_inTwoDrawdown[index_maxStd])
+            
+    #     return major_buildUp
+    
+    
+         
         
     def find_shutInPeriods(self)->List[Tuple[int,int]]:
         #copy self.points_drawDown list
@@ -199,15 +262,26 @@ class StoreTransients(TangentMethod):
     
     def twoSequentIdentification(self,minor_threshold_shutIn,minor_threshold_Flowing):
         shutInperiods=self.find_shutInPeriods()
+        print("====detected_shutIns",len(shutInperiods))
         filtered_shutIns=self.remove_minorTransients_shutIn(shutInperiods,minor_threshold_shutIn)
-        print("====filtered_shutIns",filtered_shutIns)
+        print("====filtered_shutIns",len(filtered_shutIns))
         self.shutInperiods=filtered_shutIns
+        self.major_buildUp,self.major_drawDown=self.convert_to_twoLists(filtered_shutIns)
         flowingPeriods=self.find_flowingPeriods(filtered_shutIns) 
-        print("====flowingPeriods",flowingPeriods)
+        print("====len(flowingPeriods)",len(flowingPeriods))
         self.flowingPeriods=flowingPeriods
         
-        self.major_buildUp,self.major_drawDown=self.convert_to_twoLists(filtered_shutIns)
-        self.breakPoints_inFlowingPeriods=self.find_breakPoints_inFlowingPeriods(flowingPeriods,minor_threshold_Flowing)
+        self.flowingTransient_objects=self.find_breakPoints_inFlowingPeriods(flowingPeriods,minor_threshold_Flowing)
+        
+    def get_allPointsStored(self)->Dict[str,List[int]]:
+        #copy list
+        points_buildUp=[point for point in self.major_buildUp]
+        for flowingTransient_object  in self.flowingTransient_objects:
+            points_buildUp+=flowingTransient_object.points_inFlowTransient
+            points_buildUp.sort()
+            
+        return {"buildUp":points_buildUp,
+                "drawDown":self.major_drawDown}
             
             
     
@@ -243,15 +317,14 @@ class FlowingTransient:
         self.points_inFlowTransient=self.remove_minorTransients_flowing(self.flowing_period,self.minor_threshold)
         
     def remove_minorTransients_flowing(self,flowing_period,minor_threshold):
-        print("================remove minor in flowing period",flowing_period)
+        # print("================remove minor in flowing period",flowing_period)
         filtered_breakPoints=[]
         points_FlowingTransients=[point for point in self.points_buildUp if point>flowing_period[0] and point<flowing_period[1]]
-        print("+++++++++++++before remove, the number of points:",len(points_FlowingTransients))
+        # print("+++++++++++++before remove, the number of points:",len(points_FlowingTransients))
        
 
         for point in points_FlowingTransients:
             if len(filtered_breakPoints)==0:
-                filtered_breakPoints.append(point)
                 start_point=flowing_period[0]
             else:
                 start_point=filtered_breakPoints[-1]
@@ -260,7 +333,7 @@ class FlowingTransient:
                 filtered_breakPoints.append(point)  
                 # print("filtered_breakPoints",filtered_breakPoints)
       
-        print("++++++++++++++filtered points ",len(filtered_breakPoints),filtered_breakPoints)
+        # print("++++++++++++++filtered points ",len(filtered_breakPoints),filtered_breakPoints)
         return filtered_breakPoints
         
     # def remove_minorTransients_flowing(self,flowing_period,minor_threshold):
@@ -301,7 +374,7 @@ class FlowingTransient:
         if len(transients_pressure)<2:
             return True
         std_transients=statistics.stdev(transients_pressure)
-        # print("start_point,end_point,std_transients,minor_threshold:",start_point,end_point,std_transients,minor_threshold*abs(self.std_pressure))
+        print("start_point,end_point,std_transients,minor_threshold:",start_point,end_point,std_transients,minor_threshold*abs(self.std_pressure))
         if abs(std_transients)<=minor_threshold*abs(self.std_pressure):
             return True
         
