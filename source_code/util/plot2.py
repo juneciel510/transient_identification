@@ -279,15 +279,20 @@ class PlotNSave:
         # scatter_colors=['blue','green','black','limegreen']
         scatter_colors=['red','green','orangered','limegreen']
         scatter_sizes=[4**2,6**2,5**2,5**2]   
-        y_labels=[self.colum_names["pressure"]["measure"],
-                  self.colum_names["rate"]["measure"],
-                  self.colum_names["pressure"]["first_order_derivative"],
-                  self.colum_names["pressure"]["second_order_derivative"]]
+        # y_labels=[self.colum_names["pressure"]["measure"],
+        #           self.colum_names["rate"]["measure"],
+        #           self.colum_names["pressure"]["first_order_derivative"],
+        #           self.colum_names["pressure"]["second_order_derivative"]]
+        y_labels=["Pressure (psia)",
+                  "Liquid rate (STB/D)",
+                  "First_order_derivative",
+                  "Second_order_derivative"]
         hline_color="purple"
         
         for i,(ax, x,y,color,size,y_label) in enumerate(zip(axs, x_coordinates,y_coordinates,scatter_colors,scatter_sizes,y_labels)):
             ax.scatter(x=x,y=y,color=color,s=size) 
             ax.set_ylabel(y_label,fontsize=16) 
+            ax.set_xlabel("Time (hr)",fontsize=16) 
             ax.tick_params(labelbottom=True)
             # ax.xaxis.tick_top()
             if len(points_detected)>0:
@@ -301,6 +306,7 @@ class PlotNSave:
                 ax.axhline(y=0,color=hline_color)
                 
         fig.subplots_adjust(bottom=0.1, top=0.9)
+        fig.align_ylabels()
         self.plots_toSave.append(fig)
         fig.suptitle(f'{self.plot_name}--Row {len(self.plots_toSave)}', 
             **{'family': 'Arial Black', 'size': 22, 'weight': 'bold'},x=0.5, y=0.98)

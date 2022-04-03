@@ -26,13 +26,18 @@ class StoreTransients(TangentMethod):
         self.points_drawDown=points_drawDown
         self.mode=mode
         self.std_pressure=statistics.stdev(self.pressure_measure)
-        print("self.std_pressure",self.std_pressure)
+        # print("self.std_pressure",self.std_pressure)
         self.major_drawDown=None
         self.major_buildUp=None
+        self.shutInperiods=None
+        self.flowingPeriods=None
+        self.breakPoints_inFlowingPeriods=None
      
         if points_buildUp!=None and points_drawDown!=None:
-            self.shutInperiods=self.find_shutInPeriods()
-            # self.flowingPeriods=self.find_flowingPeriods()
+            self.twoSequentIdentification()
+        else:
+            print("No points_buildUp or points_drawDown detected" )
+           
         
     def find_shutInPeriods(self)->List[Tuple[int,int]]:
         #copy self.points_drawDown list
@@ -54,12 +59,15 @@ class StoreTransients(TangentMethod):
                 points_drawDown.remove(points_drawDown[0])
 
             if self.mode=="Tangent":
-                # point_drawDown_major=self.get_point_minDeltaTangent(drawdown_cluster)
-                point_drawDown_major=self.get_point_minLeftTangent(drawdown_cluster)
+                point_drawDown_major=self.get_point_minDeltaTangent(drawdown_cluster)
+                # point_drawDown_major=self.get_point_minLeftTangent(drawdown_cluster)
+                print("point_drawDown_major",point_drawDown_major)
             elif self.mode=="Derivative":
                 point_drawDown_major=self.get_point_minDerivative(drawdown_cluster)
+            elif self.mode=="Std":
+                point_drawDown_major=self.get_point_maxStd(drawdown_cluster)
             else:
-                raise Exception("The mode must be a string 'Tangent' or 'Derivative'")
+                raise Exception("The mode must be a string 'Tangent' ,'Derivative' or 'Std'")
             shutInperiod.append((point_drawDown_major,point_nextbuildup))
             
         return shutInperiod
@@ -88,22 +96,26 @@ class StoreTransients(TangentMethod):
                                                  drawdown_cluster,
                                                  polynomial_order=1,
                                                  point_halfWindow=10)
-        # print(tangent_df)
+        print("===================",drawdown_cluster)
+        print(tangent_df)
         delta_tangents=list(tangent_df["tangent_right"]-tangent_df["tangent_left"])
         index_minDeltaTangent=delta_tangents.index(min(delta_tangents))
    
         return drawdown_cluster[index_minDeltaTangent]
     
-    # def get_point_maxStd(self,
-    #                      points:List[int],
-    #                         time_halfWindow:float=None,
-    #                         point_halfWindow:int=None,)->int:
-    #     pressure_inWindow=self.get_pressure_inWindow(self.pressure_measure,
-    #                                                 self.pressure_time,
-    #                                                 points:List[int],
-    #                                                 time_halfWindow,
-    #                                                 point_halfWindow)
-    #     std_transients=statistics.stdev(transients_pressure)
+    def get_point_maxStd(self,
+                         points:List[int],
+                            time_halfWindow:float=None,
+                            point_halfWindow:int=15)->int:
+        pressure_inWindow=self.get_pressure_inWindow(self.pressure_measure,
+                                                    self.pressure_time,
+                                                    points,
+                                                    time_halfWindow,
+                                                    point_halfWindow)
+        std_points=[statistics.stdev(pressure) for pressure in pressure_inWindow]
+        index_maxStd=std_points.index(max(std_points))
+        return points[index_maxStd]
+        
         
         
         
@@ -127,11 +139,11 @@ class StoreTransients(TangentMethod):
                                                             points,
                                                             point_halfWindow)
         
-        # pressure_inWindow=data_inWindow['pressure_measure_left']+data_inWindow['pressure_measure_right']
-        return data_inWindow
+        pressure_inWindow=data_inWindow['pressure_measure_left']+data_inWindow['pressure_measure_right']
+        return pressure_inWindow
     
     def find_flowingPeriods(self,shutInPeriods)->List[Tuple[int,int]]:
-        major_buildUp,major_drawDown=self.convert_to_twoLsts(shutInPeriods)
+        major_buildUp,major_drawDown=self.convert_to_twoLists(shutInPeriods)
         flowingPeriods=[]
         for buildup in major_buildUp:
             drawdown_larger=list(filter(lambda i: i > buildup, major_drawDown))
@@ -141,7 +153,7 @@ class StoreTransients(TangentMethod):
             flowingPeriods.append((buildup,drawdown))
         return flowingPeriods
     
-    def remove_minorTransients(self,shutInperiods,minor_threshold:float):
+    def remove_minorTransients_shutIn(self,shutInperiods,minor_threshold:float):
         filtered_shutIns=[]
         std_transients_lst=[]
         for drawDown, buildUp in shutInperiods:
@@ -150,10 +162,10 @@ class StoreTransients(TangentMethod):
             std_transients_lst.append(std_transients)    
             if abs(std_transients)>minor_threshold*abs(self.std_pressure):
                 filtered_shutIns.append((drawDown, buildUp))
-        print("std_transients_lst",std_transients_lst)
+        # print("std_transients_lst",std_transients_lst)
         return filtered_shutIns
     
-    def convert_to_twoLsts(self,shutInPeriods)->(List[int],List[int]):
+    def convert_to_twoLists(self,shutInPeriods)->(List[int],List[int]):
         major_drawDown=[]
         major_buildUp=[]
         #if the first buildup point is smaller than first drawdown, 
@@ -164,5 +176,87 @@ class StoreTransients(TangentMethod):
             major_drawDown.append(drawDown)
             major_buildUp.append(buildUp)
         return major_buildUp,major_drawDown
+    
+    def find_breakPoints_inFlowingPeriods(self,
+                                          flowingPeriods:List[Tuple[int,int]],
+                                          minor_threshold:float)->List[FlowingTransient]:
+        flowingTransient_lst=[]
+        for flowingPeriod in flowingPeriods:
+            flowingTransient_lst.append(FlowingTransient(self.pressure_df, 
+                                                         flowingPeriod,
+                                                         minor_threshold,
+                                                         self.points_buildUp,
+                                                         self.colum_names))
+        return flowingTransient_lst
+    
+    def twoSequentIdentification(self,minor_threshold_shutIn,minor_threshold_Flowing):
+        shutInperiods=self.find_shutInPeriods()
+        filtered_shutIns=self.remove_minorTransients_shutIn(shutInperiods,minor_threshold_shutIn)
+        flowingPeriods=self.find_flowingPeriods(filtered_shutIns)
+        
+        self.flowingPeriods=flowingPeriods
+        self.shutInperiods=filtered_shutIns
+        self.major_buildUp,self.major_drawDown=self.convert_to_twoLists(filtered_shutIns)
+        self.breakPoints_inFlowingPeriods=self.find_breakPoints_inFlowingPeriods(flowingPeriods,minor_threshold_Flowing)
+            
+            
+    
+    
+    
+ 
+        
+        
+class FlowingTransient:
+    def __init__(self, 
+                 pressure_df:pd.DataFrame,
+                 flowing_period:Tuple[int,int],
+                 minor_threshold:float,
+                 points_buildUp:List[int]=None,
+                #  points_drawDown:List[int]=None,
+                 colum_names:Dict[str,Dict[str,str]]
+                   ={"pressure":{"time":"Elapsed time",
+                                 "measure":"Data",
+                                 "first_order_derivative":"first_order_derivative",
+                                 "second_order_derivative":"second_order_derivative"},
+                    "rate":{"time":"Elapsed time","measure":"Liquid rate"}}
+                   )->None:
+        self.pressure_df=pressure_df 
+        self.flowing_period=flowing_period
+        self.minor_threshold=minor_threshold
+        self.colum_names=colum_names
+        self.pressure_measure=list(pressure_df[self.colum_names["pressure"]["measure"]])
+        self.pressure_time=list(pressure_df[self.colum_names["pressure"]["time"]])
+        self.points_buildUp=points_buildUp
+        # self.points_drawDown=points_drawDown
+    
+        self.std_pressure=statistics.stdev(self.pressure_measure)
+        self.points_inFlowTransient=self.remove_minorTransients_flowing(self.flowing_period,self.minor_threshold)
+        
+    def remove_minorTransients_flowing(self,flowing_period,minor_threshold):
+        filtered_breakPoints=[]
+        points_FlowingTransients=[point for point in self.points_buildUp if point>flowing_period[0] and point<flowing_period[1]]
+        exist_minor=True
+        while exist_minor:
+            exist_minor=False
+            for i in range(len(points_FlowingTransients)-1):
+                start_point=points_FlowingTransients[i]
+                end_point=points_FlowingTransients[i+1]
+                if self.is_minorTransient(start_point,end_point,minor_threshold):
+                    exist_minor=True
+                    continue
+                filtered_breakPoints+=[start_point,end_point]
+            filtered_breakPoints=list(set(filtered_breakPoints))
+            points_FlowingTransients=filtered_breakPoints
+            filtered_breakPoints=[]
+        return points_FlowingTransients
+                
+    
+    def is_minorTransient(self,start_point,end_point,minor_threshold)->bool:
+        transients_pressure=self.pressure_df[self.colum_names["pressure"]["measure"]].iloc[start_point:end_point]
+        std_transients=statistics.stdev(transients_pressure)
+       
+        if abs(std_transients)<=minor_threshold*abs(self.std_pressure):
+            return True
+        
             
             
