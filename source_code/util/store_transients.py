@@ -215,6 +215,10 @@ class StoreTransients(TangentMethod):
     
     def find_flowingPeriods(self,shutInPeriods)->List[Tuple[int,int]]:
         major_buildUp,major_drawDown=self.convert_to_twoLists(shutInPeriods)
+        
+        #set the first point of dataset as first major buildup by default
+        # if self.points_buildUp[0]<self.shutInPeriods[0][0]:
+        major_buildUp=[0]+major_buildUp
         flowingPeriods=[]
         for buildup in major_buildUp:
             drawdown_larger=list(filter(lambda i: i > buildup, major_drawDown))
@@ -222,6 +226,10 @@ class StoreTransients(TangentMethod):
                 break
             drawdown =drawdown_larger[0] 
             flowingPeriods.append((buildup,drawdown))
+            
+        #process buildup points after last major drawdown    
+        if self.major_buildUp[-1]>self.major_drawDown[-1]:
+            flowingPeriods.append((major_buildUp[-1],self.points_buildUp[-1]))
         return flowingPeriods
     
     def remove_minorTransients_shutIn(self,shutInperiods,minor_threshold:float):
@@ -239,10 +247,10 @@ class StoreTransients(TangentMethod):
     def convert_to_twoLists(self,shutInPeriods)->(List[int],List[int]):
         major_drawDown=[]
         major_buildUp=[]
-        #if the first buildup point is smaller than first drawdown, 
-        #set it as first major buildup by default
-        if self.points_buildUp[0]<shutInPeriods[0][0]:
-            major_buildUp.append(self.points_buildUp[0])
+        # #if the first buildup point is smaller than first drawdown, 
+        # #set it as first major buildup by default
+        # if self.points_buildUp[0]<shutInPeriods[0][0]:
+        #     major_buildUp.append(self.points_buildUp[0])
         for drawDown, buildUp in shutInPeriods:
             major_drawDown.append(drawDown)
             major_buildUp.append(buildUp)
@@ -275,13 +283,18 @@ class StoreTransients(TangentMethod):
         
     def get_allPointsStored(self)->Dict[str,List[int]]:
         #copy list
-        points_buildUp=[point for point in self.major_buildUp]
+        points_buildUp=self.major_buildUp.copy()
         for flowingTransient_object  in self.flowingTransient_objects:
             points_buildUp+=flowingTransient_object.points_inFlowTransient
             points_buildUp.sort()
             
+        print(f"====finally detect buildUp:{len(points_buildUp)},drawDown:{len(self.major_drawDown)}")
+            
         return {"buildUp":points_buildUp,
                 "drawDown":self.major_drawDown}
+
+        
+        
             
             
     
@@ -374,9 +387,22 @@ class FlowingTransient:
         if len(transients_pressure)<2:
             return True
         std_transients=statistics.stdev(transients_pressure)
-        print("start_point,end_point,std_transients,minor_threshold:",start_point,end_point,std_transients,minor_threshold*abs(self.std_pressure))
+        # print("start_point,end_point,std_transients,minor_threshold:",start_point,end_point,std_transients,minor_threshold*abs(self.std_pressure))
         if abs(std_transients)<=minor_threshold*abs(self.std_pressure):
             return True
+        
+    # def is_minorTransient(self,start_point,end_point,minor_threshold)->bool:
+    #     start_data=self.pressure_df.iloc[start_point]
+    #     end_data=self.pressure_df.iloc[end_point]
+    #     delta_pressure=
+    #     transients_pressure=self.pressure_df[self.colum_names["pressure"]["measure"]].iloc[start_point:end_point]
+    #     # print("transients_pressure",type(transients_pressure), len(transients_pressure))
+    #     if len(transients_pressure)<2:
+    #         return True
+    #     std_transients=statistics.stdev(transients_pressure)
+    #     # print("start_point,end_point,std_transients,minor_threshold:",start_point,end_point,std_transients,minor_threshold*abs(self.std_pressure))
+    #     if abs(std_transients)<=minor_threshold*abs(self.std_pressure):
+    #         return True
         
             
             

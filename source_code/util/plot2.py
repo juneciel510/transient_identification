@@ -126,7 +126,7 @@ class PlotNSave:
         bin_number = bin_edges.size - 1
         cond = np.zeros((x.size, bin_number), dtype=bool)
         for i in range(bin_number):
-            cond[:, i] = np.logical_and(bin_edges[i] < x,
+            cond[:, i] = np.logical_and(bin_edges[i] <= x,
                                         x < bin_edges[i+1])
         return [list(x[cond[:, i]]) for i in range(bin_number)]
 

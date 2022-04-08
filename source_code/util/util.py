@@ -1,12 +1,21 @@
 import numpy as np
 import pandas as pd
 import statistics
+import json
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from operator import itemgetter
 from typing import Callable, Dict, List, Set, Tuple
 
 
+def save_json(data,filePath):
+    with open(filePath, 'w') as fp:
+        json.dump(data, fp)
+        
+def load_json(filePath:str):  
+    with open(filePath) as infile:
+        data = json.load(infile)
+    return data
 
 def load_data_from_txt(pressure_file:str, 
                        rate_file:str, 
@@ -216,6 +225,7 @@ class SelectRows:
         Select Rows where Column Value is in List of Values
         """
         return self.df.loc[(self.df[col_name1] == value1) & (self.df[col_name2] < value2)]
+    
     
     def select_byIndexValueList(self,value_list):
         """

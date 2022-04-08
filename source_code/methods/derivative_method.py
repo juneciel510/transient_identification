@@ -23,6 +23,16 @@ class DerivativeMethod:
         self.second_order_derivative=pressure_df[colum_names["pressure"]["second_order_derivative"]]
         self.std_1=statistics.stdev(self.first_order_derivative)
         
+    def percentile_FOD(self, 
+                        percentile_upperBound:float,
+                        percentile_lowerBound:float)->List[int]:
+        data=self.first_order_derivative
+        upper_bound=np.percentile(data, percentile_upperBound, axis=0,method="normal_unbiased")
+        lower_bound=np.percentile(data, percentile_lowerBound, axis=0,method="normal_unbiased")
+        print(f"fliter derivatives which are larger than {upper_bound}, smaller than {lower_bound}")
+        filtered_df=self.pressure_df.loc[(self.first_order_derivative <= lower_bound) | (self.first_order_derivative >= upper_bound)]
+        return list(filtered_df.index)
+    
     def detect_max_FOD(self,
                    time_step:float=2
                     )->List[int]:
@@ -40,6 +50,25 @@ class DerivativeMethod:
         
         # filtered_points=[point_index for point_index in index_max_FOD if self.first_order_derivative[point_index]>0.02*self.std_1 ]
         return index_max_FOD
+    
+    def detect_first_FOD(self,
+                   time_step:float=2
+                    )->List[int]:
+        """
+        get the indices of the points with maximum first_order_derivative in every time step
+        """
+        
+        self.pressure_df["abs(first_order_derivative)"]=self.first_order_derivative.abs()
+        max_time=list(self.pressure_time)[-1]
+        group_number=math.ceil(max_time/time_step)
+        #devide the pressure_df into multiple sub df according to time step
+        sub_pressure_dfs=[self.pressure_df.loc[(self.pressure_time >= i*time_step) & (self.pressure_time  <= (i+1)*time_step)] for i in range(group_number)]
+        #get the index of max absolute value of first order derivative
+        # index_max_FOD=[sub_pressure_df["abs(first_order_derivative)"].idxmax() for sub_pressure_df in sub_pressure_dfs if len(sub_pressure_df)>0]
+        
+        index_first_FOD=[sub_pressure_df.index[0] for sub_pressure_df in sub_pressure_dfs if len(sub_pressure_df)>0]
+        # filtered_points=[point_index for point_index in index_max_FOD if self.first_order_derivative[point_index]>0.02*self.std_1 ]
+        return index_first_FOD
 
     def FOD_above_threshold(self, points,noise_threshold):
             filtered_points=[]
@@ -258,14 +287,10 @@ class DerivativeMethod:
                              points:pd.DataFrame,
                              close_zero_threshold:float,
                              tuning_parameters:float,
-                             noise_threshold:float=None,
                              point_halfWindow:int=None,
                              time_halfWindow:float=None,
                              )->(List[int],List[int]):
-      
-        if noise_threshold!=None:
-            points=self.FOD_above_threshold(points,noise_threshold)
-            
+          
         if point_halfWindow!=None and time_halfWindow!=None:
             print("point_halfWindow and time_halfWindow, one of them should be none")
             
@@ -282,6 +307,36 @@ class DerivativeMethod:
         buildup,drawdown=self.detect_breakpoints(avg_derivative_inWindow,
                                                 close_zero_threshold,
                                                 tuning_parameters)
+        
+        return buildup,drawdown
+    
+    def detect_breakpoints_deltaAvgFOD(self,
+                             points:pd.DataFrame,
+                             deltaDerivative_tuning:float,
+                             point_halfWindow:int=None,
+                             time_halfWindow:float=None,
+                             )->(List[int],List[int]):
+          
+        if point_halfWindow!=None and time_halfWindow!=None:
+            print("point_halfWindow and time_halfWindow, one of them should be none")
+            
+        if point_halfWindow!=None:            
+            avg_derivative_inWindow=self.avg_derivative_inPointWindow(self.first_order_derivative,
+                                                                    points,
+                                                                    point_halfWindow)
+        if time_halfWindow!=None:            
+            avg_derivative_inWindow=self.avg_derivative_inTimeWindow(self.first_order_derivative,
+                                                                     self.pressure_time,
+                                                                    points,
+                                                                    time_halfWindow)
+        
+        buildup=[]
+        drawdown=[]
+        for index,row in avg_derivative_inWindow.iterrows():
+            if row["avg_derivative_right"]>0 and (row["avg_derivative_right"]-row["avg_derivative_left"])>deltaDerivative_tuning*abs(self.std_1):
+                    buildup.append(int(row["point_index"]))
+            if row["avg_derivative_right"]<0 and (row["avg_derivative_right"]-row["avg_derivative_left"])<-deltaDerivative_tuning*abs(self.std_1):
+                    drawdown.append(int(row["point_index"]))
         
         return buildup,drawdown
         
