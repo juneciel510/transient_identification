@@ -237,6 +237,8 @@ class StoreTransients(TangentMethod):
         std_transients_lst=[]
         for drawDown, buildUp in shutInperiods:
             transients_pressure=self.pressure_df[self.colum_names["pressure"]["measure"]].iloc[drawDown:buildUp]
+            if len(transients_pressure)<2:
+                continue
             std_transients=statistics.stdev(transients_pressure)
             std_transients_lst.append(std_transients)    
             if abs(std_transients)>minor_threshold*abs(self.std_pressure):
@@ -350,34 +352,36 @@ class FlowingTransient:
         return filtered_breakPoints
         
     # def remove_minorTransients_flowing(self,flowing_period,minor_threshold):
-    #     print("================remove minor in flowing period",flowing_period)
+    #     # print("================remove minor in flowing period",flowing_period)
     #     filtered_breakPoints=[]
     #     points_FlowingTransients=[point for point in self.points_buildUp if point>flowing_period[0] and point<flowing_period[1]]
-    #     print("+++++++++++++before remove, the number of points:",len(points_FlowingTransients))
+    #     # print("+++++++++++++before remove, the number of points:",len(points_FlowingTransients))
     #     exist_minor=True
     #     count=0
     #     while exist_minor:
     #         count+=1
-    #         print("***********while loop")
+    #         # print("***********while loop")
     #         exist_minor=False
-    #         print("--------exist minor",exist_minor)
+    #         # print("--------exist minor",exist_minor)
     #         for i in range(len(points_FlowingTransients)-1):
     #             start_point=points_FlowingTransients[i]
     #             end_point=points_FlowingTransients[i+1]
     #             if self.is_minorTransient(start_point,end_point,minor_threshold):
     #                 exist_minor=True
-    #                 print("--------exist minor",exist_minor)
+    #                 # print("--------exist minor",exist_minor)
     #             else:
     #                 filtered_breakPoints+=[start_point,end_point]
-    #             print("filtered_breakPoints",filtered_breakPoints)
+    #             # print("filtered_breakPoints",filtered_breakPoints)
     #         filtered_breakPoints=list(set(filtered_breakPoints))
     #         filtered_breakPoints.sort()
-    #         print("++++++++++++++filtered points ",len(filtered_breakPoints),filtered_breakPoints)
+    #         # print("++++++++++++++filtered points ",len(filtered_breakPoints),filtered_breakPoints)
+    #         if len(filtered_breakPoints)==len(points_FlowingTransients):
+    #             break
     #         points_FlowingTransients=filtered_breakPoints
     #         filtered_breakPoints=[]
             
-    #     print("while loop times",count)
-    #     print("final----points_FlowingTransients",len(points_FlowingTransients),points_FlowingTransients)
+    #     # print("while loop times",count)
+    #     # print("final----points_FlowingTransients",len(points_FlowingTransients),points_FlowingTransients)
     #     return points_FlowingTransients
                 
     

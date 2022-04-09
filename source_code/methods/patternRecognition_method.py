@@ -29,8 +29,8 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
     """
     
     def __init__(self, 
-                 time_halfWindow_forPredict:float=0.5,
-                 time_halfWindow_forLearn:float=1,
+                #  time_halfWindow_forPredict:float=0.5,
+                #  time_halfWindow_forLearn:float=1,
                  min_pointsNumber:int=8,
                 percentile_tuning={
                                     "buildUp":{"left":[90,10],
@@ -59,9 +59,9 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
         # self.detectedpoints=defaultdict(list)
         # self.point_halfWindow=point_halfWindow
         #time window for learn
-        self.time_halfWindow_forLearn=time_halfWindow_forLearn
-        #time window for predict
-        self.time_halfWindow_forPredict=time_halfWindow_forPredict
+        # self.time_halfWindow_forLearn=time_halfWindow_forLearn
+        # #time window for predict
+        # self.time_halfWindow_forPredict=time_halfWindow_forPredict
         self.min_pointsNumber=min_pointsNumber
         self.percentile_tuning=percentile_tuning
         self.fine_tuning=fine_tuning
@@ -229,7 +229,7 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
         x_right=np.linspace(start = 0, stop = time_halfWindow_forLearn, num = number)
     
         fig=plt.figure(figsize = (20, 10))
-        plt.xlim([-self.time_halfWindow_forPredict,self.time_halfWindow_forPredict])
+        # plt.xlim([-self.time_halfWindow_forPredict,self.time_halfWindow_forPredict])
         if buildUp_or_drawDown=="buildUp":
             plt.ylim([-50, 280])
         else:
@@ -293,6 +293,7 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
             parameters_twoPatterns[pattern_name]=parameters_pattern
             
         self.parameters_twoPatterns=parameters_twoPatterns
+        print("pattern learned:",parameters_twoPatterns)
     
          
     
@@ -462,6 +463,7 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
             pressure_measure:List[float],
             pressure_time:List[float],
             ground_truth:List[int],
+            time_halfWindow_forLearn,
             fitting_type:str
             )->Dict[str,pd.DataFrame]:
         """ 
@@ -480,13 +482,13 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
                                                   pressure_measure,
                                                   pressure_time,
                                                   ground_truth,
-                                                  self.time_halfWindow_forLearn,
+                                                  time_halfWindow_forLearn,
                                                   self.min_pointsNumber,
                                                   fitting_type
                                                   )
         
         self.get_borders_twoPattern(parameters_allCurves_groundTruth,
-                    self.time_halfWindow_forLearn,
+                    time_halfWindow_forLearn,
                     fitting_type,
                     loadedParameters_pattern=None)
     
@@ -496,6 +498,8 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
                 pressure_measure:List[float],
                 pressure_time:List[float],
                 points:List[int],
+                time_halfWindow:float=None,
+                point_halfWindow:int=None,
                 fitting_type="polynomial")->(List[float],List[float]):
         """ 
         identify the breakpoints for the given dataset.
@@ -524,7 +528,22 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
                                                     "drawDown"])
             
         borderData=pd.DataFrame()
-        data_inWindow=self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,self.time_halfWindow_forPredict,self.min_pointsNumber)
+        # data_inWindow=self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,self.time_halfWindow_forPredict,self.min_pointsNumber)
+        fitting_type="polynomial"     
+        if time_halfWindow!=None and point_halfWindow!=None:
+            print("if you want to use time window, please set 'point_halfWindow' to be None, vice versa")
+            return None
+        if time_halfWindow!=None:
+            data_inWindow=self.extract_points_inTimeWindow(pressure_measure,
+                                        pressure_time,
+                                        points,
+                                        time_halfWindow)
+        if point_halfWindow!=None:
+            data_inWindow=self.extract_points_inPointWindow(pressure_measure,
+                                                            pressure_time,
+                                                            points,
+                                                            point_halfWindow)
+        # display(data_inWindow)
         for index,curveData_singlePoint in data_inWindow.iterrows():     
             curveData_singlePoint["pressure_time_right"].reverse()
             curveData_singlePoint["pressure_measure_right"].reverse()
@@ -546,13 +565,13 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
         points_buildUp,points_drawDown=detectedpoints.values()
   
         
-        print(f"before filter, the length of buildup {len(points_buildUp)}, the length of drawdown {len(points_drawDown)}")
-        points=points_buildUp+points_drawDown
-        points_buildUp,points_drawDown=self.detect_breakpoint_type(pressure_measure,
-                                                                   pressure_time,
-                                                                   points,
-                                                                   self.time_halfWindow_forPredict,
-                                                                   self.min_pointsNumber)
+        # print(f"before filter, the length of buildup {len(points_buildUp)}, the length of drawdown {len(points_drawDown)}")
+        # points=points_buildUp+points_drawDown
+        # points_buildUp,points_drawDown=self.detect_breakpoint_type(pressure_measure,
+        #                                                            pressure_time,
+        #                                                            points,
+        #                                                            self.time_halfWindow_forPredict,
+        #                                                            self.min_pointsNumber)
         print(f"after filter, the results are filtered further, there are {len(points_buildUp)} detected buildup points, {len(points_drawDown)} drawdown detected")
         return points_buildUp,points_drawDown
             

@@ -290,7 +290,7 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
         predict the breakpoint use the difference between left tangent and right tangent
         """
         print("==================")
-        print("start to predict using tangent...")
+        print(f"start to predict using tangent, the length of input points: {len(points)}")
 #         self.buildUp_or_drawDown=""
         
         # deltaTangent_criterion=self.get_deltadeltaTangent_criterion(fitting_type)
