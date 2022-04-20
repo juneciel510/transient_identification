@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
+import json
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from matplotlib.backends.backend_pdf import PdfPages
@@ -8,6 +9,7 @@ from typing import Callable, Dict, List, Set, Tuple
 import tempfile
 from fpdf import FPDF 
 import base64
+import uuid,re
 from scipy.signal import savgol_filter
 
 class LoadNPreprocessData:
@@ -212,12 +214,14 @@ class PlotNSave:
         print("---plotting...")
         if self.plot_statistics:
             self.plot_detection_statistics()
+        st.markdown("- ######  Overview Plot")
         self.plot_4_metrics(self.pressure_df,
                                 self.rate_df,
                                 self.points_detected,
                                 self.ground_truth, 
                                 self.plot_whole,
                                 filename_toSave_whole!="")
+        st.markdown("- ###### Zoom-in Plot")
         self.plot_4_metrics_details(self.plot_details)
     
     def produce_detectedPoints_lst(self):
@@ -461,7 +465,7 @@ class PlotNSave:
             html = self.create_download_link(pdf.output(dest="S").encode("latin-1"), self.filename_toSave_whole)
             # # print("html",html)
             st.markdown(html, unsafe_allow_html=True)
-            st.markdown("### button")
+            # st.header("")
             
             # with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
             #     print("tmpfile.name",tmpfile.name)
@@ -660,4 +664,92 @@ def plot_nonDenoised_VS_Denoised(pressure_df:pd.DataFrame,
     # legend.get_frame().set_facecolor('C0')
     plt.show()
     
+    
+def download_button(object_to_download, download_filename, button_text):
+    """
+    Generates a link to download the given object_to_download.
+
+    From: https://discuss.streamlit.io/t/a-download-button-with-custom-css/4220
+
+    Params:
+    ------
+    object_to_download:  The object to be downloaded.
+    download_filename (str): filename and extension of file. e.g. mydata.csv,
+    some_txt_output.txt download_link_text (str): Text to display for download
+    link.
+
+    button_text (str): Text to display on download button (e.g. 'click here to download file')
+    pickle_it (bool): If True, pickle file.
+
+    Returns:
+    -------
+    (str): the anchor tag to download object_to_download
+
+    Examples:
+    --------
+    download_link(your_df, 'YOUR_DF.csv', 'Click to download data!')
+    download_link(your_str, 'YOUR_STRING.txt', 'Click to download text!')
+
+    """
+    # if pickle_it:
+    #    try:
+    #        object_to_download = pickle.dumps(object_to_download)
+    #    except pickle.PicklingError as e:
+    #        st.write(e)
+    #        return None
+
+    # if:
+    if isinstance(object_to_download, bytes):
+        pass
+
+    elif isinstance(object_to_download, pd.DataFrame):
+        object_to_download = object_to_download.to_csv(index=False)
+    # Try JSON encode for everything else
+    else:
+        object_to_download = json.dumps(object_to_download)
+
+    try:
+        # some strings <-> bytes conversions necessary here
+        b64 = base64.b64encode(object_to_download.encode()).decode()
+    except AttributeError as e:
+        b64 = base64.b64encode(object_to_download).decode()
+
+    button_uuid = str(uuid.uuid4()).replace("-", "")
+    button_id = re.sub("\d+", "", button_uuid)
+
+    custom_css = f""" 
+        <style>
+            #{button_id} {{
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                background-color: rgb(255, 255, 255);
+                color: rgb(38, 39, 48);
+                padding: .25rem .75rem;
+                position: relative;
+                text-decoration: none;
+                border-radius: 4px;
+                border-width: 1px;
+                border-style: solid;
+                border-color: rgb(230, 234, 241);
+                border-image: initial;
+            }} 
+            #{button_id}:hover {{
+                border-color: rgb(246, 51, 102);
+                color: rgb(246, 51, 102);
+            }}
+            #{button_id}:active {{
+                box-shadow: none;
+                background-color: rgb(246, 51, 102);
+                color: white;
+                }}
+        </style> """
+
+    dl_link = (
+        custom_css
+        + f'<a download="{download_filename}" id="{button_id}" href="data:file/txt;base64,{b64}">{button_text}</a><br><br>'
+    )
+    # dl_link = f'<a download="{download_filename}" id="{button_id}" href="data:file/txt;base64,{b64}"><input type="button" kind="primary" value="{button_text}"></a><br></br>'
+
+    st.markdown(dl_link, unsafe_allow_html=True)
     

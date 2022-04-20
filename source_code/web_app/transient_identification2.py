@@ -33,7 +33,7 @@ from tangent_method import TangentMethod
 from derivative_method import DerivativeMethod
 from store_transients import StoreTransients
 # from store_transients2 import StoreTransients
-from func_for_st import PlotNSave, LoadNPreprocessData
+from func_for_st import PlotNSave, LoadNPreprocessData, download_button
 
 colum_names   ={"pressure":{"time":"Elapsed time(hr)",
                              "measure":"Pressure(psia)",
@@ -45,32 +45,38 @@ colum_names   ={"pressure":{"time":"Elapsed time(hr)",
 def upload_N_preview():
     input_df_pressure=pd.DataFrame()
     input_df_rate=pd.DataFrame()
-    uploaded_file_pressure = st.sidebar.file_uploader("Upload your input pressure file", type=["txt"]) 
-    if uploaded_file_pressure is not None:
-        input_df_pressure = pd.read_csv(uploaded_file_pressure, 
-                                    delimiter=" ",
-                                    skiprows=2, 
-                                    names=[colum_names["pressure"]["time"], 
-                                            colum_names["pressure"]["measure"]],
-                                    skipinitialspace = True)    
+    st.markdown("## ✨ Upload & Preview ")
+    with st.expander("""Upload pressure & flow rate data or only pressure data."""):
+        # ce, c1, ce, c2, ce = st.columns([0.01, 3, 0.07, 3, 0.07])
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("##### Pressure Data")
+            uploaded_file_pressure = st.file_uploader("Upload your pressure file", type=["txt"]) 
+            if uploaded_file_pressure is not None:
+                input_df_pressure = pd.read_csv(uploaded_file_pressure, 
+                                            delimiter=" ",
+                                            skiprows=2, 
+                                            names=[colum_names["pressure"]["time"], 
+                                                    colum_names["pressure"]["measure"]],
+                                            skipinitialspace = True)   
+            if uploaded_file_pressure!=None:
+                st.dataframe(input_df_pressure.head()) 
 
-
-    uploaded_file_rate = st.sidebar.file_uploader("Upload your input rate file", type=["txt"])
-    if uploaded_file_rate is not None:
-        input_df_rate = pd.read_csv(uploaded_file_rate, 
-                                    delimiter=" ",
-                                    skiprows=2, 
-                                    names=[colum_names["rate"]["time"], 
-                                            colum_names["rate"]["measure"]], 
-                                    skipinitialspace = True)   
+        with c2:
+            st.markdown("##### Flow Rate Data")
+            uploaded_file_rate = st.file_uploader("Upload your rate file", type=["txt"])
+            if uploaded_file_rate is not None:
+                input_df_rate = pd.read_csv(uploaded_file_rate, 
+                                            delimiter=" ",
+                                            skiprows=2, 
+                                            names=[colum_names["rate"]["time"], 
+                                                    colum_names["rate"]["measure"]], 
+                                            skipinitialspace = True)   
         
-    if uploaded_file_pressure!=None:
-        st.markdown("### ✨ Pressure Data preview")
-        st.dataframe(input_df_pressure.head())
+    
         
-    if uploaded_file_rate!=None:
-        st.markdown("### ✨ Flow Rate Data preview")
-        st.dataframe(input_df_rate.head())
+            if uploaded_file_rate!=None:
+                st.dataframe(input_df_rate.head())
         
     return input_df_pressure, input_df_rate
 
@@ -92,60 +98,66 @@ def user_input_parameters():
     #             # help="Minimum value for the keyphrase_ngram_range. keyphrase_ngram_range sets the length of the resulting keywords/keyphrases. To extract keyphrases, simply set keyphrase_ngram_range to (1, # 2) or higher depending on the number of words you would like in the resulting keyphrases.",
     #         )
     
-    rows_detailPlot= st.number_input(
-                "The number of rows for a detail plot",
-                value=12,
-                min_value=1,
-                max_value=300,
-                step=1,
-                help="""The whole datasets will be plotted in *rows_plot* rows.""",
-            )
+    
+    # c1, c2 = st.columns([0.01, 3, 0.07, 3, 0.07])
+    c1, c2 = st.columns(2)
+    with c1:
+        rows_detailPlot= st.number_input(
+                    "The number of rows for a detail plot",
+                    value=12,
+                    min_value=1,
+                    max_value=300,
+                    step=1,
+                    help="""The whole datasets will be plotted in *rows_plot* rows.""",
+                )
 
-    point_halfWindow = st.number_input(
-                "Point Window",
-                value=10,
-                min_value=5,
-                max_value=100,
-                help="""The number of points for observation at the left side or right side. Smaller number preferred when the distribution of the data points is very sparse.""",
-            )
+        point_halfWindow = st.number_input(
+                    "Point Window",
+                    value=10,
+                    min_value=5,
+                    max_value=100,
+                    help="""The number of points for observation at the left side or right side. Smaller number preferred when the distribution of the data points is very sparse.""",
+                )
+        
+        polynomial_order = st.number_input(
+                    "Polynomial Order",
+                    value=1,
+                    min_value=1,
+                    max_value=5,
+                    help="""Recommend using 1 for most cases. More minor transients will be detected with larger number.""",
+                )
+        
+    with c2:
     
-    polynomial_order = st.number_input(
-                "Polynomial Order",
-                value=1,
-                min_value=1,
-                max_value=5,
-                help="""Recommend using 1 for most cases. More minor transients will be detected with larger number.""",
-            )
-    
-    deltaTangent_criterion = st.number_input(
-                "Delta Tangent Threshold",
-                value=20.0,
-                min_value=1.0,
-                max_value=1000.0,
-                step=1.0,
-                format="%.1f",
-                help=""" *Delta Tangent*: Substraction of left tangent and right tangent for a certain point.""",
-            )
-    
-    minor_threshold_shutIn = st.number_input(
-                "Minor Shut-in Threshold",
-                value=0.020,
-                min_value=0.,
-                max_value=10.,
-                step=0.001,
-                format="%.3f",
-                help="""The value to tune the threshold for removing minor *Shut-in Periods*. Set the value to be zero, if you want to keep all the transients that have been screened out.""",
-            )
-    
-    minor_threshold_Flowing = st.number_input(
-                "Minor Flowing Threshold",
-                value=0.020,
-                min_value=0.,
-                max_value=10.,
-                step=0.001,
-                format="%.3f",
-                help="""The value to tune the threshold for removing minor transients in *Flowing Periods*. Set the value to be zero, if you want to keep all the transients that have been screened out.""",
-            )
+        deltaTangent_criterion = st.number_input(
+                    "Delta Tangent Threshold",
+                    value=20.0,
+                    min_value=1.0,
+                    max_value=1000.0,
+                    step=1.0,
+                    format="%.1f",
+                    help=""" *Delta Tangent*: Substraction of left tangent and right tangent for a certain point.""",
+                )
+        
+        minor_threshold_shutIn = st.number_input(
+                    "Minor Shut-in Threshold",
+                    value=0.020,
+                    min_value=0.,
+                    max_value=10.,
+                    step=0.001,
+                    format="%.3f",
+                    help="""The value to tune the threshold for removing minor *Shut-in Periods*. Set the value to be zero, if you want to keep all the transients that have been screened out.""",
+                )
+        
+        minor_threshold_Flowing = st.number_input(
+                    "Minor Flowing Threshold",
+                    value=0.020,
+                    min_value=0.,
+                    max_value=10.,
+                    step=0.001,
+                    format="%.3f",
+                    help="""The value to tune the threshold for removing minor transients in *Flowing Periods*. Set the value to be zero, if you want to keep all the transients that have been screened out.""",
+                )
     
     parameters={
         # "denoise_checkBox":denoise_checkBox,
@@ -165,8 +177,8 @@ def preprocess_data(input_df_pressure,input_df_rate,denoise):
                  use_SG_smoothing=(denoise=="Yes"))
         pressure_df=processed_data_denoised.pressure_df
         rate_df=processed_data_denoised.rate_df
-        # pressure_df=pressure_df[0:3000]
-        pressure_df=pressure_df[0:5000]
+        pressure_df=pressure_df[0:3000]
+        # pressure_df=pressure_df[0:5000]
        
         return pressure_df,rate_df
 
@@ -210,13 +222,42 @@ def plot_task1_N_task2(colum_names,parameters,buildup,drawdown,pressure_df,rate_
                             drawdown,
                             colum_names,
                             mode)
+    all_flowing=[]
+    flowingTransient_objects=transients.flowingTransient_objects
+    for flowingTransient_object in flowingTransient_objects:
+        all_flowing.append({"Flowing Period":flowingTransient_object.flowing_period,
+                            "Breakpoints in Flowing Period":flowingTransient_object.points_inFlowTransient})
 
-    parameters_copy=parameters.copy()
-    del parameters_copy["rows_detailPlot"]
-    parameters_copy.update({"Shut-in":len(transients.major_drawDown),
-                            "Build-up":len(transients.allPointsStored["buildUp"]), 
-                            "Draw-down":len(transients.allPointsStored["drawDown"])})
-    st.write(pd.DataFrame(parameters_copy, index=[0]))
+    output=parameters.copy()
+    del output["rows_detailPlot"]
+    output.update({"Number of Shut-in":len(transients.major_drawDown),
+                            "Number of All Build-up":len(transients.allPointsStored["buildUp"]), 
+                            "Number of All Draw-down":len(transients.allPointsStored["drawDown"]), 
+                            "Shut-in Periods":transients.shutInperiods,
+                            "Flowing Period & Breakpoints in Flowing":all_flowing})
+    
+    # output_df=pd.DataFrame(output, index=[0])
+    output_df=pd.DataFrame()
+    output_df=output_df.append(output,ignore_index=True)
+    # output_df=output_df.append({"Shut-in Periods":transients.shutInperiods},ignore_index=True)
+    # output_df=output_df.append({"Flowing Period & Breakpoints in Flowing":all_flowing},ignore_index=True)
+    print("output_df",output_df)
+    # display(output_df)
+    
+    
+    st.markdown("##### 1. Parameters & Detected results")
+    # cs, c1, c2, c3, cLast = st.columns([2, 1.5, 1.5, 1.5, 2])
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        CSVButton2 = download_button(output_df, "Data.csv", "📥 Download (.csv)")
+    with c2:
+        CSVButton2 = download_button(output, "Data.txt", "📥 Download (.txt)")
+    with c3:
+        CSVButton2 = download_button(output, "Data.json", "📥 Download (.json)")
+
+    st.write(output_df)
+    st.header("")
     
     plot_whole=True
     plot_details=True
@@ -224,6 +265,7 @@ def plot_task1_N_task2(colum_names,parameters,buildup,drawdown,pressure_df,rate_
     txt=""
     data_inOneRow=int(len(pressure_df)/parameters["rows_detailPlot"])+1
     #plot task 1
+    st.markdown("##### 2. Split shut-in & flowing periods")
     file_name="split shut-in & flowing periods"
     filename_toSave_whole=file_name+"_whole.pdf"
     filename_toSave_details=file_name+"_details.pdf"
@@ -246,7 +288,10 @@ def plot_task1_N_task2(colum_names,parameters,buildup,drawdown,pressure_df,rate_
             plot_details,
             colum_names)
     
+    st.header("")
+    
     #plot task 2
+    st.markdown("##### 3. All detected break points")
     file_name="all detected break points"
     filename_toSave_whole=file_name+"_whole.pdf"
     filename_toSave_details=file_name+"_details.pdf"
@@ -270,17 +315,39 @@ def plot_task1_N_task2(colum_names,parameters,buildup,drawdown,pressure_df,rate_
     
 
     
+    
+
+    
 
 st.set_page_config(
     page_title="Transients Identification App", page_icon="📌", initial_sidebar_state="expanded"
 )
 
+def _max_width_():
+    max_width_str = f"max-width: 1400px;"
+    st.markdown(
+        f"""
+    <style>
+    .reportview-container .main .block-container{{
+        {max_width_str}
+    }}
+    </style>    
+    """,
+        unsafe_allow_html=True,
+    )
 
-st.write(
-    """
-# 📌 Transient Identification App
-"""
-)
+
+_max_width_()
+
+# c30, c31, c32 = st.columns([2.5, 1, 3])
+# with c30:
+    # st.write(
+    #     """
+    # # 📌 Transient Identification App
+    # """
+    # )
+st.title("📌 Transient Identification App")
+# st.header("")
 
 with st.expander("ℹ️ - About this app", expanded=True):
 
@@ -296,31 +363,35 @@ with st.expander("ℹ️ - About this app", expanded=True):
     st.markdown("")
 
 input_df_pressure, input_df_rate=upload_N_preview()
+
+
 if len(input_df_pressure)>0 and len(input_df_rate)>0:
          
     st.markdown("### 🔑 Select Methods for Identification")
     with st.form(key="my_form"):
-        denoise = st.radio(
-            f"Denoise",
-            options=["Yes", "No"],
-            help="Select yes if you want to denoise the pressure measurements.",
-        )
+        c1, c2 = st.columns(2)
+        with c1:
+            denoise = st.radio(
+                f"Denoise",
+                options=["Yes", "No"],
+                help="Select yes if you want to denoise the pressure measurements.",
+            )
         # methods = st.multiselect(
         #     "Methods",
         #     options=["DeltaTangent","DeltaFOD","PatternRecognition"],
         #     help="Select the methods you want to use for transients identification.",
         #     default=["DeltaTangent"],
         # )
-        
-        methods = st.radio(
-            "Methods",
-            options=["DeltaTangent","DeltaFOD","PatternRecognition"],
-            help="Select the methods you want to use for transients identification. Recommend using *DeltaTangent*",
-        )
+        with c2:
+            methods = st.radio(
+                "Methods",
+                options=["DeltaTangent","DeltaFOD","PatternRecognition"],
+                help="Select the methods you want to use for transients identification. Recommend using *DeltaTangent*",
+            )
      
         print("methods",methods)
-        with st.expander("Adjust test parameters"):
-            st.markdown("#### Parameters")
+        with st.expander("Adjust parameters"):
+            st.markdown("##### Parameters")
             parameters1 = user_input_parameters()
             
         
@@ -343,7 +414,10 @@ if len(input_df_pressure)>0 and len(input_df_rate)>0:
     buildup,drawdown=detect_using_deltaTangent(points, parameters,pressure_df,colum_names)
     print("after detect_using_deltaTangent",len(buildup),len(drawdown))
     buildup,drawdown=FFOD_filter(buildup,drawdown,pressure_df)
+    buildup=[int(point) for point in buildup]
+    drawdown=[int(point) for point in drawdown]
     print("after FFOD_filter",len(buildup),len(drawdown))
+    print("--------type",type(buildup[0]))
     plot_task1_N_task2(colum_names,parameters,buildup,drawdown,pressure_df,rate_df)
     
     
