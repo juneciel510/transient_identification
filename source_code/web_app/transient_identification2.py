@@ -52,7 +52,7 @@ st.set_page_config(
     page_title="Transients Identification App", 
     page_icon="📌", 
     initial_sidebar_state="expanded",
-    layout="wide"
+    layout="centered"
 )
 
 with open('style.css') as f:
@@ -74,14 +74,8 @@ def _max_width_():
 
 _max_width_()
 
-# c30, c31, c32 = st.columns([2.5, 1, 3])
-# with c30:
-    # st.write(
-    #     """
-    # # 📌 Transient Identification App
-    # """
-    # )
-st.title("📌 Transient Identification App")
+# st.title("📌 Transient Identification App")
+st.markdown("### 📌 Transient Identification App")
 # st.header("")
 
 with st.expander("ℹ️ - About this app", expanded=True):
@@ -96,10 +90,13 @@ with st.expander("ℹ️ - About this app", expanded=True):
     )
 
     st.markdown("")
+st.markdown("")
+st.markdown("")
 
 input_df_pressure, input_df_rate=upload_N_preview()
 
-
+st.markdown("")
+st.markdown("")
 if len(input_df_pressure)>0 and len(input_df_rate)>0:
          
     st.markdown("### 🔑 Select Methods for Identification")
@@ -125,7 +122,7 @@ if len(input_df_pressure)>0 and len(input_df_rate)>0:
             )
      
         print("methods",methods)
-        with st.expander("Adjust parameters"):
+        with st.expander("Adjust parameters",expanded=True):
             st.markdown("##### Parameters")
             parameters1 = user_input_parameters()
             
@@ -141,7 +138,8 @@ if len(input_df_pressure)>0 and len(input_df_rate)>0:
     pressure_df,rate_df=preprocess_data(input_df_pressure,input_df_rate,denoise)
     
     st.write("")
-    st.markdown("## 🎈 Results for Transient Identification ")
+    st.write("")
+    st.markdown("### 🎈 Results for Transient Identification ")
     st.write("")
     
     points=coarse_filter(pressure_df,colum_names)

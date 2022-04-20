@@ -234,15 +234,19 @@ class PlotNSave:
         print("---plotting...")
         if self.plot_statistics:
             self.plot_detection_statistics()
-        st.markdown("- ######  Overview Plot")
-        self.plot_4_metrics(self.pressure_df,
-                                self.rate_df,
-                                self.points_detected,
-                                self.ground_truth, 
-                                self.plot_whole,
-                                filename_toSave_whole!="")
-        st.markdown("- ###### Zoom-in Plot")
-        self.plot_4_metrics_details(self.plot_details)
+            
+        c1, c2 = st.columns(2)
+        with c1:
+        # st.markdown("- ######  Overview Plot")
+            self.plot_4_metrics(self.pressure_df,
+                                    self.rate_df,
+                                    self.points_detected,
+                                    self.ground_truth, 
+                                    self.plot_whole,
+                                    filename_toSave_whole!="")
+        # st.markdown("- ###### Zoom-in Plot")
+        with c2:
+            self.plot_4_metrics_details(self.plot_details)
     
     def produce_detectedPoints_lst(self):
         points_lst=list(self.points_detected_dict.values())
@@ -482,7 +486,7 @@ class PlotNSave:
             # pp = PdfPages(self.filename_toSave_whole)
             # # for fig in self.plots_toSave:
             # fig.savefig(pp, format='pdf')
-            html = self.create_download_link(pdf.output(dest="S").encode("latin-1"), self.filename_toSave_whole)
+            html = self.create_download_link(pdf.output(dest="S").encode("latin-1"), self.filename_toSave_whole,"📥 Overview Plot(.pdf)")
             # # print("html",html)
             st.markdown(html, unsafe_allow_html=True)
             # st.header("")
@@ -534,10 +538,51 @@ class PlotNSave:
 #         self.plots_toSave.append(last_page)
 #         plt.close()
         
-    def create_download_link(self,val, filename):
+    # def create_download_link(self,val, filename):
+    #     b64 = base64.b64encode(val)  # val looks like b'...'
+    #     # pdf_display = f'<iframe src="data:application/pdf;base64,{b64.decode()}" width="850" height="700" type="application/pdf"></iframe>'
+    #     # return pdf_display
+        
+    #     return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}">Download file</a>'
+    
+    def create_download_link(self,val, filename,button_text):
+        button_uuid = str(uuid.uuid4()).replace("-", "")
+        button_id = re.sub("\d+", "", button_uuid)
+        custom_css = f""" 
+        <style>
+            #{button_id} {{
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                background-color: rgb(255, 255, 255);
+                color: rgb(38, 39, 48);
+                padding: .25rem .75rem;
+                position: relative;
+                text-decoration: none;
+                border-radius: 4px;
+                border-width: 1px;
+                border-style: solid;
+                border-color: rgb(230, 234, 241);
+                border-image: initial;
+            }} 
+            #{button_id}:hover {{
+                border-color: rgb(246, 51, 102);
+                color: rgb(246, 51, 102);
+            }}
+            #{button_id}:active {{
+                box-shadow: none;
+                background-color: rgb(246, 51, 102);
+                color: white;
+                }}
+        </style> """
         b64 = base64.b64encode(val)  # val looks like b'...'
-        pdf_display = f'<iframe src="data:application/pdf;base64,{b64.decode()}" width="850" height="700" type="application/pdf"></iframe>'
-        return pdf_display
+        # pdf_display = f'<iframe src="data:application/pdf;base64,{b64.decode()}" width="850" height="700" type="application/pdf"></iframe>'
+        # return pdf_display
+        dl_link = (
+        custom_css
+        + f'<a download="{filename}" id="{button_id}" href="data:application/octet-stream;base64,{b64.decode()}">{button_text}</a><br><br>'
+        )
+        return dl_link
         
         # return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}">Download file</a>'
         
@@ -551,7 +596,7 @@ class PlotNSave:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
                     fig.savefig(tmpfile.name,bbox_inches="tight")
                     pdf.image(tmpfile.name)
-        html = self.create_download_link(pdf.output(dest="S").encode("latin-1"), filename_toSave)
+        html = self.create_download_link(pdf.output(dest="S").encode("latin-1"), filename_toSave,"📥 Zoom-in Plot(.pdf)")
         st.markdown(html, unsafe_allow_html=True)
         # st.st.markdown("### button")
         # self.add_page(self.txt)
@@ -777,8 +822,8 @@ def download_button(object_to_download, download_filename, button_text):
 def upload_N_preview():
     input_df_pressure=pd.DataFrame()
     input_df_rate=pd.DataFrame()
-    st.markdown("## ✨ Upload & Preview ")
-    with st.expander("""Upload pressure & flow rate data or only pressure data."""):
+    st.markdown("### ✨ Upload & Preview ")
+    with st.expander("""Upload pressure & flow rate data or only pressure data.""",expanded=True):
         # ce, c1, ce, c2, ce = st.columns([0.01, 3, 0.07, 3, 0.07])
         c1, c2 = st.columns(2)
         with c1:
@@ -909,8 +954,8 @@ def preprocess_data(input_df_pressure,input_df_rate,denoise):
                  use_SG_smoothing=(denoise=="Yes"))
         pressure_df=processed_data_denoised.pressure_df
         rate_df=processed_data_denoised.rate_df
-        # pressure_df=pressure_df[0:3000]
-        # pressure_df=pressure_df[0:5000]
+        # pressure_df=pressure_df[0:12000]
+        pressure_df=pressure_df[0:3000]
        
         return pressure_df,rate_df
 
