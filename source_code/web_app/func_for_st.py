@@ -909,7 +909,7 @@ def preprocess_data(input_df_pressure,input_df_rate,denoise):
                  use_SG_smoothing=(denoise=="Yes"))
         pressure_df=processed_data_denoised.pressure_df
         rate_df=processed_data_denoised.rate_df
-        pressure_df=pressure_df[0:3000]
+        # pressure_df=pressure_df[0:3000]
         # pressure_df=pressure_df[0:5000]
        
         return pressure_df,rate_df
