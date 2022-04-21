@@ -44,9 +44,14 @@ colum_names   ={"pressure":{"time":"Elapsed time(hr)",
 
 class LoadNPreprocessData:
     def __init__(self,
-                 pressure_df:pd.DataFrame, 
-                 rate_df:pd.DataFrame, 
-                 colum_names:Dict[str,Dict[str,str]], 
+                 pressure_df:pd.DataFrame=pd.DataFrame(), 
+                 rate_df:pd.DataFrame=pd.DataFrame(), 
+                 colum_names:Dict[str,Dict[str,str]]={"pressure":{"time":"Elapsed time(hr)",
+                             "measure":"Pressure(psia)",
+                             "first_order_derivative":"first_order_derivative",
+                             "second_order_derivative":"second_order_derivative"},
+                "rate":{"time":"Elapsed time(hr)",
+                        "measure":"Liquid rate(STB/D)"}}, 
                  skip_rows:int=2,
                  sheet_name:Dict[str,str]={"pressure":"Pressure",
                                            "rate":"Rate"},
@@ -119,6 +124,20 @@ class LoadNPreprocessData:
         else:
             print("check the time type")
         return None
+    
+        # if len(self.pressure_df)>0:
+        #     pressure_time_type= type(self.pressure_df[self.colum_names["pressure"]["time"]][0]) 
+        #     if pressure_time_type is float:
+        #         pass
+        #     elif pressure_time_type is pd.Timestamp:
+        #         timestamps=self.pressure_df[self.colum_names["pressure"]["time"]]
+        #         start_timestamp=timestamps[0]
+        #         self.pressure_df[self.colum_names["pressure"]["time"]]=self.convert_timestamp2hour(timestamps,start_timestamp)
+        #     else:
+        #         raise TypeError("Only float and timestamp are allowed for the time field")
+
+                    
+            
 
     
     def concatenate_pressureNRate(self):
@@ -833,7 +852,7 @@ def upload_N_preview():
     input_df_pressure=pd.DataFrame()
     input_df_rate=pd.DataFrame()
     st.markdown("### ✨ Upload & Preview ")
-    with st.expander(""" """,expanded=True):
+    with st.expander(""" The time field of data must be float (hr) or dataframe. """,expanded=True):
         # ce, c1, ce, c2, ce = st.columns([0.01, 3, 0.07, 3, 0.07])
         c1, c2 = st.columns(2)
         with c1:
@@ -850,7 +869,7 @@ def upload_N_preview():
                 st.dataframe(input_df_pressure.head()) 
 
         with c2:
-            st.markdown("##### Flow Rate Data (optional)")
+            st.markdown("##### Flow Rate Data")
             uploaded_file_rate = st.file_uploader("Upload your rate file", type=["txt"])
             if uploaded_file_rate is not None:
                 input_df_rate = pd.read_csv(uploaded_file_rate, 
