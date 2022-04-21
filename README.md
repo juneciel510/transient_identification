@@ -1,9 +1,1 @@
-`Finshed:`</br>
-Startpoint method</br>
-Baseline method</br>
-Pattern recognition method & tangent method</br>
-
-`To-do:`</br>
-Combine different methods</br>
-Feature-based machine learning method</br>
-Backend, frontend, API</br>
+`Deployed App:` [Click here](https://share.streamlit.io/juneciel510/project_ongoing/main/app.py)
