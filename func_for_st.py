@@ -833,7 +833,7 @@ def upload_N_preview():
     input_df_pressure=pd.DataFrame()
     input_df_rate=pd.DataFrame()
     st.markdown("### ✨ Upload & Preview ")
-    with st.expander("""Upload pressure & flow rate data or only pressure data.""",expanded=True):
+    with st.expander(""" """,expanded=True):
         # ce, c1, ce, c2, ce = st.columns([0.01, 3, 0.07, 3, 0.07])
         c1, c2 = st.columns(2)
         with c1:
@@ -850,7 +850,7 @@ def upload_N_preview():
                 st.dataframe(input_df_pressure.head()) 
 
         with c2:
-            st.markdown("##### Flow Rate Data")
+            st.markdown("##### Flow Rate Data (optional)")
             uploaded_file_rate = st.file_uploader("Upload your rate file", type=["txt"])
             if uploaded_file_rate is not None:
                 input_df_rate = pd.read_csv(uploaded_file_rate, 

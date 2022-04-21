@@ -145,7 +145,7 @@ if len(input_df_pressure)>0 and len(input_df_rate)>0:
     
     st.write("")
     st.write("")
-    st.markdown("### 🎈 Result")
+    st.markdown("### 🎈 Results")
     st.write("")
     
     points=coarse_filter(pressure_df,colum_names)
