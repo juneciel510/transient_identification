@@ -105,7 +105,7 @@ st.markdown("")
 st.markdown("")
 if len(input_df_pressure)>0 and len(input_df_rate)>0:
          
-    st.markdown("### 🔑 Select Methods for Identification")
+    st.markdown("### 🔑 Select Method & Parameters")
     with st.form(key="my_form"):
         c1, c2 = st.columns(2)
         with c1:
@@ -145,7 +145,7 @@ if len(input_df_pressure)>0 and len(input_df_rate)>0:
     
     st.write("")
     st.write("")
-    st.markdown("### 🎈 Results for Transient Identification ")
+    st.markdown("### 🎈 Results")
     st.write("")
     
     points=coarse_filter(pressure_df,colum_names)
