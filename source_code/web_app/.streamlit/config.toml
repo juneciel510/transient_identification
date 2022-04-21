@@ -1,0 +1,29 @@
+[global]
+
+# By default, Streamlit checks if the Python watchdog module is available and, if not, prints a warning asking for you to install it. The watchdog module is not required, but highly recommended. It improves Streamlit's ability to detect changes to files in your filesystem.
+# If you'd like to turn off this warning, set this to True.
+# Default: false
+disableWatchdogWarning = true
+
+dataFrameSerialization = "legacy"
+
+[logger]
+
+# Level of logging: 'error', 'warning', 'info', or 'debug'.
+# Default: 'info'
+level = "error"
+
+[client]
+
+
+# Controls whether uncaught app exceptions are displayed in the browser. By default, this is set to True and Streamlit displays app exceptions and associated tracebacks in the browser.
+# If set to False, an exception will result in a generic message being shown in the browser, and exceptions and tracebacks will be printed to the console only.
+# Default: true
+showErrorDetails = false
+
+[theme]
+primaryColor = "#00B4B3"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F2F6"
+textColor = "#262730"
+font = "sans serif"
