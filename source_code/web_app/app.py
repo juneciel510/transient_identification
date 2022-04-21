@@ -22,18 +22,6 @@ warnings.simplefilter('ignore', np.RankWarning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
 sys.path.insert(1, '../util')
 sys.path.insert(1, '../methods')
-from util import SelectRows,calculate_derivative,pointInterval_to_pressure,point_dt_to_pressure,print_tuning_parameters,timeInterval_to_sub_df, save_json, load_json
-# from plot import PlotNSave
-# from plot2 import PlotNSave, plot_histogram
-# from data_load_N_preprocess import LoadNPreprocessData
-from base_classes import CurveParametersCalc
-# from patternRecognition_method import PatternRecognitionMethod
-from tangent_method import TangentMethod
-# from advanced_method import detect_max_FOD
-from derivative_method import DerivativeMethod
-from store_transients import StoreTransients
-# from store_transients2 import StoreTransients
-# from func_for_st import PlotNSave, LoadNPreprocessData, download_button
 from func_for_st import *
 
 
