@@ -852,7 +852,7 @@ def upload_N_preview():
     input_df_pressure=pd.DataFrame()
     input_df_rate=pd.DataFrame()
     st.markdown("### ✨ Upload & Preview ")
-    with st.expander(""" The time field of data must be float (hr) or dataframe. """,expanded=True):
+    with st.expander(""" *The time field of data must be float (hr) or timestamp(01/01/2019  00:00:22).""",expanded=True):
         # ce, c1, ce, c2, ce = st.columns([0.01, 3, 0.07, 3, 0.07])
         c1, c2 = st.columns(2)
         with c1:
