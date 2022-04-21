@@ -107,3 +107,6 @@ source_code/MFOD/
 source_code/web_app/Order_1_TanThre_20_shutTr_0.02_flowTr_0.02_details.pdf
 source_code/web_app/Order_1_TanThre_20_shutTr_0.02_flowTr_0.02_whole.pdf
 source_code/web_app/test.py
+source_code/__init__.py
+source_code/methods/__init__.py
+source_code/util/__init__.py

@@ -4,6 +4,10 @@ import numpy as np
 import pandas as pd
 import math
 import statistics
+import sys, os.path
+methods_dir = (os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
++ '/methods/')
+sys.path.append(methods_dir)
 from tangent_method import TangentMethod
 
 class StoreTransients(TangentMethod):

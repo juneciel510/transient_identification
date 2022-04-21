@@ -20,9 +20,9 @@ import os
 import sys
 warnings.simplefilter('ignore', np.RankWarning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
-sys.path.insert(1, '../util')
-sys.path.insert(1, '../methods')
-from func_for_st import *
+# sys.path.insert(1, '../util')
+# sys.path.insert(1, '../methods')
+from func_for_st import upload_N_preview,user_input_parameters,preprocess_data,coarse_filter,detect_using_deltaTangent,FFOD_filter,plot_task1_N_task2,LoadNPreprocessData, PlotNSave,download_button
 
 
 

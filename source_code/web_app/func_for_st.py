@@ -11,19 +11,29 @@ from fpdf import FPDF
 import base64
 import uuid,re
 from scipy.signal import savgol_filter
-import sys
-sys.path.insert(1, '../util')
-sys.path.insert(1, '../methods')
-from util import SelectRows,calculate_derivative,pointInterval_to_pressure,point_dt_to_pressure,print_tuning_parameters,timeInterval_to_sub_df, save_json, load_json
+import sys, os.path
+# sys.path.insert(1, '../util')
+# sys.path.insert(1, '../methods')
+
+util_dir = (os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
++ '/util/')
+
+sys.path.append(util_dir)
+# from source_code.util.util import SelectRows
+from util import SelectRows
+from store_transients import StoreTransients
 # from plot import PlotNSave
 # from plot2 import PlotNSave, plot_histogram
 # from data_load_N_preprocess import LoadNPreprocessData
+methods_dir = (os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
++ '/methods/')
+sys.path.append(methods_dir)
 from base_classes import CurveParametersCalc
 # from patternRecognition_method import PatternRecognitionMethod
 from tangent_method import TangentMethod
 # from advanced_method import detect_max_FOD
 from derivative_method import DerivativeMethod
-from store_transients import StoreTransients
+
 
 colum_names   ={"pressure":{"time":"Elapsed time(hr)",
                              "measure":"Pressure(psia)",
