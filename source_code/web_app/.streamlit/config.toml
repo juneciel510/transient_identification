@@ -23,7 +23,7 @@ showErrorDetails = false
 
 [theme]
 primaryColor = "#00B4B3"
-# IfbackgroundColor = "#FFFFFF"
+# backgroundColor = "#FFFFFF"
 backgroundColor = "#00FFFF"
 secondaryBackgroundColor = "#F0F2F6"
 textColor = "#262730"

@@ -33,23 +33,23 @@ colum_names   ={"pressure":{"time":"Elapsed time(hr)",
                 "rate":{"time":"Elapsed time(hr)",
                         "measure":"Liquid rate(STB/D)"}}
 
-fontsize_css = f""" 
-<style>
-    div.stDataFrame.css-1287gwp.e11ks2pe8 {{
-  font-size: 0.8rem;
-}}
-section.css-po3vlj.exg6vvm15 {{
-  font-size: 0.8rem;
-}}
+# fontsize_css = f""" 
+# <style>
+#     div.stDataFrame.css-1287gwp.e11ks2pe8 {{
+#   font-size: 0.8rem;
+# }}
+# section.css-po3vlj.exg6vvm15 {{
+#   font-size: 0.8rem;
+# }}
 
-small.css-1aehpvj.euu6i2w0 {{
-  font-size: 0.8rem;
-}}
+# small.css-1aehpvj.euu6i2w0 {{
+#   font-size: 0.8rem;
+# }}
 
-div.stDataFrame.css-1gzbsyi.e11ks2pe8 {{
-  font-size: 0.8rem;
-}}
-</style> """
+# div.stDataFrame.css-1gzbsyi.e11ks2pe8 {{
+#   font-size: 0.8rem;
+# }}
+# </style> """
      
 
 st.set_page_config(
@@ -62,7 +62,7 @@ st.set_page_config(
 # with open('style.css') as f:
 #     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-st.markdown(fontsize_css, unsafe_allow_html=True)
+# st.markdown(fontsize_css, unsafe_allow_html=True)
 
 def _max_width_():
     max_width_str = f"max-width: 1400px;"
@@ -145,7 +145,7 @@ if len(input_df_pressure)>0 and len(input_df_rate)>0:
     
     st.write("")
     st.write("")
-    st.markdown("### 🎈 Results")
+    st.markdown("### 🎈 Result")
     st.write("")
     
     points=coarse_filter(pressure_df,colum_names)
