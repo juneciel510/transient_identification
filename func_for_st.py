@@ -15,24 +15,24 @@ import sys, os.path
 # sys.path.insert(1, '../util')
 # sys.path.insert(1, '../methods')
 
-util_dir = (os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-+ '/util/')
+# util_dir = (os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# + '/util/')
 
-sys.path.append(util_dir)
+# sys.path.append(util_dir)
 # from source_code.util.util import SelectRows
-from util import SelectRows
-from store_transients import StoreTransients
+from util.util import SelectRows
+from util.store_transients import StoreTransients
 # from plot import PlotNSave
 # from plot2 import PlotNSave, plot_histogram
 # from data_load_N_preprocess import LoadNPreprocessData
-methods_dir = (os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-+ '/methods/')
-sys.path.append(methods_dir)
-from base_classes import CurveParametersCalc
+# methods_dir = (os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# + '/methods/')
+# sys.path.append(methods_dir)
+from methods.base_classes import CurveParametersCalc
 # from patternRecognition_method import PatternRecognitionMethod
-from tangent_method import TangentMethod
+from methods.tangent_method import TangentMethod
 # from advanced_method import detect_max_FOD
-from derivative_method import DerivativeMethod
+from methods.derivative_method import DerivativeMethod
 
 
 colum_names   ={"pressure":{"time":"Elapsed time(hr)",

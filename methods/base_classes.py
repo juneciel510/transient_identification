@@ -15,7 +15,6 @@ from scipy.signal import savgol_filter
 import math 
 import bisect
 
-from plot import plot_histogram
 
 
 def polyval_func_wrapper(x, *parameters):
