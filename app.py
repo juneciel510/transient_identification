@@ -103,65 +103,69 @@ input_df_pressure, input_df_rate=upload_N_preview()
 
 st.markdown("")
 st.markdown("")
-if len(input_df_pressure)>0 and len(input_df_rate)>0:
+
          
-    st.markdown("### 🔑 Select Method & Parameters")
-    with st.form(key="my_form"):
-        c1, c2 = st.columns(2)
-        with c1:
-            denoise = st.radio(
-                f"Denoise",
-                options=["Yes", "No"],
-                help="Select yes if you want to denoise the pressure measurements.",
-            )
-        # methods = st.multiselect(
-        #     "Methods",
-        #     options=["DeltaTangent","DeltaFOD","PatternRecognition"],
-        #     help="Select the methods you want to use for transients identification.",
-        #     default=["DeltaTangent"],
-        # )
-        with c2:
-            methods = st.radio(
-                "Methods",
-                options=["DeltaTangent","DeltaFOD","PatternRecognition"],
-                help="Select the methods you want to use for transients identification. Recommend using *DeltaTangent*",
-            )
-     
-        print("methods",methods)
-        with st.expander("Adjust parameters",expanded=True):
-            st.markdown("##### Parameters")
-            parameters1 = user_input_parameters()
-            
+st.markdown("### 🔑 Select Method & Parameters")
+with st.form(key="my_form"):
+    c1, c2 = st.columns(2)
+    with c1:
+        denoise = st.radio(
+            f"Denoise",
+            options=["Yes", "No"],
+            help="Select yes if you want to denoise the pressure measurements.",
+        )
+    # methods = st.multiselect(
+    #     "Methods",
+    #     options=["DeltaTangent","DeltaFOD","PatternRecognition"],
+    #     help="Select the methods you want to use for transients identification.",
+    #     default=["DeltaTangent"],
+    # )
+    with c2:
+        methods = st.radio(
+            "Methods",
+            options=["DeltaTangent","DeltaFOD","PatternRecognition"],
+            help="Select the methods you want to use for transients identification. Recommend using *DeltaTangent*",
+        )
+    
+    print("methods",methods)
+    with st.expander("Adjust parameters",expanded=True):
+        st.markdown("##### Parameters")
+        parameters1 = user_input_parameters()
         
-            
-        submit_button = st.form_submit_button(label="Submit")
-        print("submit_button",submit_button)
-        parameters={"Methods":methods, "Denoise": denoise}
-        parameters.update(parameters1)    
-        # st.write(pd.DataFrame(parameters, index=[0]))
-    if not submit_button:
-        st.stop()
-    pressure_df,rate_df=preprocess_data(input_df_pressure,input_df_rate,denoise)
-    st.write("")
-    st.write("")
     
-    st.markdown("### 🎈 Results")
-    st.write("")
+        
+    submit_button = st.form_submit_button(label="Submit")
+    print("submit_button",submit_button)
+    parameters={"Methods":methods, "Denoise": denoise}
+    parameters.update(parameters1)    
+    # st.write(pd.DataFrame(parameters, index=[0]))
+if not submit_button:
+    st.stop()
+if not (len(input_df_pressure)>0 and len(input_df_rate)>0):
+    st.warning("Please upload pressure & rate measurements")
+    st.stop()
     
-    points=coarse_filter(pressure_df,colum_names)
-    print("after coarse filter",len(points))
-    # points=MFOD_filter(points,pressure_df)
-    # print("after MFOD_filter",len(points))
-    buildup,drawdown=detect_using_deltaTangent(points, parameters,pressure_df,colum_names)
-    print("after detect_using_deltaTangent",len(buildup),len(drawdown))
-    buildup,drawdown=FFOD_filter(buildup,drawdown,pressure_df)
-    buildup=[int(point) for point in buildup]
-    drawdown=[int(point) for point in drawdown]
-    print("after FFOD_filter",len(buildup),len(drawdown))
-    print("--------type",type(buildup[0]))
-    plot_task1_N_task2(colum_names,parameters,buildup,drawdown,pressure_df,rate_df)
-    
-    
+pressure_df,rate_df=preprocess_data(input_df_pressure,input_df_rate,denoise)
+st.write("")
+st.write("")
+
+st.markdown("### 🎈 Results")
+st.write("")
+
+points=coarse_filter(pressure_df,colum_names)
+print("after coarse filter",len(points))
+# points=MFOD_filter(points,pressure_df)
+# print("after MFOD_filter",len(points))
+buildup,drawdown=detect_using_deltaTangent(points, parameters,pressure_df,colum_names)
+print("after detect_using_deltaTangent",len(buildup),len(drawdown))
+buildup,drawdown=FFOD_filter(buildup,drawdown,pressure_df)
+buildup=[int(point) for point in buildup]
+drawdown=[int(point) for point in drawdown]
+print("after FFOD_filter",len(buildup),len(drawdown))
+print("--------type",type(buildup[0]))
+plot_task1_N_task2(colum_names,parameters,buildup,drawdown,pressure_df,rate_df)
+
+
     
     
     
