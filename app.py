@@ -22,7 +22,7 @@ warnings.simplefilter('ignore', np.RankWarning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
 # sys.path.insert(1, '../util')
 # sys.path.insert(1, '../methods')
-from func_for_st import upload_N_preview,user_input_parameters,preprocess_data,coarse_filter,detect_using_deltaTangent,FFOD_filter,plot_task1_N_task2,LoadNPreprocessData, PlotNSave,download_button
+from func_for_st import upload_N_preview,user_input_parameters,preprocess_data,coarse_filter,detect_using_deltaTangent,FFOD_filter,plot_task1_N_task2,MFOD_filter,LoadNPreprocessData, PlotNSave,download_button
 
 
 
@@ -142,14 +142,16 @@ if len(input_df_pressure)>0 and len(input_df_rate)>0:
     if not submit_button:
         st.stop()
     pressure_df,rate_df=preprocess_data(input_df_pressure,input_df_rate,denoise)
+    st.write("")
+    st.write("")
     
-    st.write("")
-    st.write("")
     st.markdown("### 🎈 Results")
     st.write("")
     
     points=coarse_filter(pressure_df,colum_names)
     print("after coarse filter",len(points))
+    # points=MFOD_filter(points,pressure_df)
+    # print("after MFOD_filter",len(points))
     buildup,drawdown=detect_using_deltaTangent(points, parameters,pressure_df,colum_names)
     print("after detect_using_deltaTangent",len(buildup),len(drawdown))
     buildup,drawdown=FFOD_filter(buildup,drawdown,pressure_df)

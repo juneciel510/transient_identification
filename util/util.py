@@ -6,6 +6,11 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from operator import itemgetter
 from typing import Callable, Dict, List, Set, Tuple
+import sys,os.path
+methods_dir = (os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
++ '/methods/')
+sys.path.append(methods_dir)
+from tangent_method import TangentMethod
 
 
 def save_json(data,filePath):
@@ -346,3 +351,50 @@ def non_uniform_savgol(x, y, window, polynom):
             x_i *= x[i] - x[-half_window - 1]
 
     return y_smoothed
+
+
+class analyze_FOD_tangent(TangentMethod):
+    def __init__(self,
+                 pressure_df,
+                 polynomial_order,
+                 point_halfWindow,
+                colum_names:Dict[str,Dict[str,str]]
+                   ={"pressure":{"time":"Elapsed time",
+                                 "measure":"Data",
+                                 "first_order_derivative":"first_order_derivative",
+                                 "second_order_derivative":"second_order_derivative"},
+                    "rate":{"time":"Elapsed time","measure":"Liquid rate"}}):
+        super().__init__(polynomial_order=polynomial_order,point_halfWindow=point_halfWindow)
+        self.pressure_df=pressure_df
+        self.colum_names=colum_names
+        self.pressure_measure=list(pressure_df[self.colum_names["pressure"]["measure"]])
+        self.pressure_time=list(pressure_df[self.colum_names["pressure"]["time"]])
+    def get_FOD_tangent(self,points):
+        """
+        Returns:
+        dataframe with column name:
+        ["point_index","tangent_left","tangent_right","deltaTangent","first_order_derivative","Elapsed time"]
+        """
+        tangent_df=self.produce_tangent_inWindow(self.pressure_measure,
+                                                 self.pressure_time,
+                                                 points,
+                                                 polynomial_order=self.polynomial_order,
+                                                 point_halfWindow=self.point_halfWindow)
+        fod=self.pressure_df.iloc[points,:]["first_order_derivative"]
+        time=self.pressure_df.iloc[points,:][self.colum_names["pressure"]["time"]]
+        tangent_df["deltaTangent"]=tangent_df["tangent_right"]-tangent_df["tangent_left"]
+        tangent_df["first_order_derivative"]=list(fod)
+        tangent_df[self.colum_names["pressure"]["time"]]=list(time)
+        return tangent_df
+    
+    def plot_tangent(self,points):
+        tangent_plot=self.produce_tangent_inWindow(self.pressure_measure,
+                                                 self.pressure_time,
+                                                 points,
+                                                   data_type="for_plot",
+                                                   point_halfWindow=self.point_halfWindow,
+                                                 polynomial_order=self.polynomial_order,
+                                                 point_halfWindow_tagentPlot=self.point_halfWindow)
+        #         display(tangent_plot)
+        for point_index in points:
+            self.plot_tangent_inPointWindow(tangent_plot,point_index)

@@ -7,3 +7,13 @@ ignored/
 data_output/
 data_input/
 Transient_identification_LejunChen.pptx
+
+experiments_jupyterNotebook/histogram--startpoint_flowing-deltaTangent.png
+experiments_jupyterNotebook/histogram--startpoint_flowing-first_order_derivative.png
+experiments_jupyterNotebook/histogram--startpoint_flowing-tangent_left.png
+experiments_jupyterNotebook/histogram--startpoint_shutIn-deltaTangent.png
+experiments_jupyterNotebook/histogram--startpoint_shutIn-first_order_derivative.png
+experiments_jupyterNotebook/histogram--startpoint_shutIn-tangent_left.png
+experiments_jupyterNotebook/histogram--wholeData-deltaTangent.png
+experiments_jupyterNotebook/histogram--wholeData-first_order_derivative.png
+experiments_jupyterNotebook/histogram--wholeData-tangent_left.png

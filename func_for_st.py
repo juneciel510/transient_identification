@@ -852,7 +852,7 @@ def upload_N_preview():
     input_df_pressure=pd.DataFrame()
     input_df_rate=pd.DataFrame()
     st.markdown("### ✨ Upload & Preview ")
-    with st.expander(""" *The time field of data must be float (hr) or timestamp(01/01/2019  00:00:22).""",expanded=True):
+    with st.expander(""" *The time field of data must be float (hr) or timestamp (01/01/2019  00:00:22).""",expanded=True):
         # ce, c1, ce, c2, ce = st.columns([0.01, 3, 0.07, 3, 0.07])
         c1, c2 = st.columns(2)
         with c1:
@@ -1016,6 +1016,12 @@ def FFOD_filter(buildup,drawdown,pressure_df):
     buildup=First_FOD[0]
     drawdown=First_FOD[1]
     return buildup,drawdown
+
+def MFOD_filter(points,pressure_df):
+    time_step=0.03
+    points_df=SelectRows(pressure_df).select_byIndexValueList(points)
+    filtered_points=DerivativeMethod(points_df,colum_names).detect_max_FOD(time_step)
+    return filtered_points
 
 def plot_task1_N_task2(colum_names,parameters,buildup,drawdown,pressure_df,rate_df):
     minor_threshold_shutIn=parameters["Minor Shut-in Threshold"]

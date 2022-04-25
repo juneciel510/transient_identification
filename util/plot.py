@@ -413,8 +413,7 @@ class PlotNSave:
         plt.show()
         return None
 
-def plot_histogram(data, xlabel:str, ylabel:str,title:str)->None:
-    number_bins=300
+def plot_histogram(data, xlabel:str, ylabel:str,title:str,number_bins:int=300)->None:
     # plt.style.use('ggplot')
     plt.hist(data, bins=number_bins)
     plt.xlabel(xlabel)
