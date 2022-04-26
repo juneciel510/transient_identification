@@ -23,7 +23,9 @@ class StoreTransients(TangentMethod):
                     "rate":{"time":"Elapsed time","measure":"Liquid rate"}},
                    mode:str="Derivative")->None:
         self.pressure_df=pressure_df 
+        # display(pressure_df)
         self.colum_names=colum_names
+        # print("colum_names",colum_names)
         self.pressure_measure=list(pressure_df[self.colum_names["pressure"]["measure"]])
         self.pressure_time=list(pressure_df[self.colum_names["pressure"]["time"]])
         # self.points_buildUp=points_buildUp
