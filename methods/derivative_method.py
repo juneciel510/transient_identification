@@ -218,7 +218,7 @@ class DerivativeMethod:
                                           )->Dict[str,List[float]]: 
 
         """
-        extract pressure derivative & time data for a single point
+        extract average pressure derivative & time data for a single point
         in point window  [point_index-halfWinow_left,point_index+halfWinow_right]
         
         Args:
@@ -260,6 +260,9 @@ class DerivativeMethod:
                            close_zero_threshold:float,
                            tuning_parameters:float
                            )->(List[int],List[int]):
+        """
+        Use derivative range to detect
+        """
         buildUp=[]
         drawDown=[]
         for index,row in avg_derivative.iterrows():
@@ -273,6 +276,9 @@ class DerivativeMethod:
                              avg_derivative:pd.DataFrame,
                              deltaDerivative_tuning:float
                              )->(List[int],List[int]):
+        """
+        Use derivative delta to detect
+        """
         buildup=[]
         drawdown=[]
         for index,row in avg_derivative.iterrows():

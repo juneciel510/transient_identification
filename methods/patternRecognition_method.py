@@ -530,19 +530,26 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
         borderData=pd.DataFrame()
         # data_inWindow=self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,self.time_halfWindow_forPredict,self.min_pointsNumber)
         fitting_type="polynomial"     
-        if time_halfWindow!=None and point_halfWindow!=None:
-            print("if you want to use time window, please set 'point_halfWindow' to be None, vice versa")
-            return None
-        if time_halfWindow!=None:
-            data_inWindow=self.extract_points_inTimeWindow(pressure_measure,
-                                        pressure_time,
-                                        points,
-                                        time_halfWindow)
-        if point_halfWindow!=None:
-            data_inWindow=self.extract_points_inPointWindow(pressure_measure,
+        # if time_halfWindow!=None and point_halfWindow!=None:
+        #     print("if you want to use time window, please set 'point_halfWindow' to be None, vice versa")
+        #     return None
+        # if time_halfWindow!=None:
+        #     data_inWindow=self.extract_points_inTimeWindow(pressure_measure,
+        #                                 pressure_time,
+        #                                 points,
+        #                                 time_halfWindow)
+        # if point_halfWindow!=None:
+        #     data_inWindow=self.extract_points_inPointWindow(pressure_measure,
+        #                                                     pressure_time,
+        #                                                     points,
+        #                                                     point_halfWindow)
+        data_inWindow=self.extract_points_inWindow(pressure_measure,
                                                             pressure_time,
                                                             points,
-                                                            point_halfWindow)
+                                                            time_halfWindow=time_halfWindow,
+                                                            point_halfWindow=point_halfWindow,
+                                                            min_pointsNumber=self.min_pointsNumber
+                                                            )
         # display(data_inWindow)
         for index,curveData_singlePoint in data_inWindow.iterrows():     
             curveData_singlePoint["pressure_time_right"].reverse()

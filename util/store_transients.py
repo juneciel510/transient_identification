@@ -9,6 +9,8 @@ methods_dir = (os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 + '/methods/')
 sys.path.append(methods_dir)
 from tangent_method import TangentMethod
+from base_classes import CurveParametersCalc
+from extract_points import ExtractPoints_inWindow
 
 class StoreTransients(TangentMethod):
     def __init__(self, 
@@ -23,7 +25,10 @@ class StoreTransients(TangentMethod):
                                  "first_order_derivative":"first_order_derivative",
                                  "second_order_derivative":"second_order_derivative"},
                     "rate":{"time":"Elapsed time","measure":"Liquid rate"}},
-                   mode:str="Derivative")->None:
+                   mode:str="Derivative",
+                   time_halfWindow:float=None,
+                    point_halfWindow:int=10)->None:
+        TangentMethod.__init__(self)
         self.pressure_df=pressure_df 
         self.colum_names=colum_names
         self.pressure_measure=list(pressure_df[self.colum_names["pressure"]["measure"]])
@@ -192,9 +197,46 @@ class StoreTransients(TangentMethod):
         std_points=[statistics.stdev(pressure) for pressure in pressure_inWindow]
         index_maxStd=std_points.index(max(std_points))
         return points[index_maxStd]
-        
-        
-        
+    
+    def get_points_signSwitch(self,
+                         pressure_measure:List[float],
+                        pressure_time:List[float],
+                         points:List[int],
+                            time_halfWindow:float=None,
+                            point_halfWindow:int=15)->List[int]:
+        """
+        search a point where the derivative changed its sign and 
+        then remains the same sign for following points (period) 
+        - in this case, first point of the derivative change is the break-point
+        """
+        points_buildUp=[]
+        points_drawDown=[]
+        data_inWindow=self.extract_points_inWindow(pressure_measure,
+                                            pressure_time,
+                                            points,
+                                            time_halfWindow,
+                                            point_halfWindow)
+        for i in range(len(data_inWindow)):
+            pressure_measure_rightWindow=data_inWindow["pressure_measure_right"][i]
+            point_type=self.data_rightWindow(pressure_measure_rightWindow)
+            if point_type=="buildUp":
+                points_buildUp.append(data_inWindow["point_index"][i])
+            elif point_type=="drawDown":
+                points_drawDown.append(data_inWindow["point_index"][i])
+            else:
+                pass
+                     
+    
+    def checkPoint_bysign(self,data_rightWindow):
+    
+        sign_remainings=[data_rightWindow[i]>0 for i in range(1,len(data_rightWindow)) if data_rightWindow[i]!=0]
+
+        if all(sign_remainings) and data_rightWindow[0]<=0:
+            return "buildUp"
+        elif (not any(sign_remainings)) and data_rightWindow[0]>=0:
+            return "drawDown"
+        else:
+            return "Not break point"    
         
     def get_pressure_inWindow(self,
                               pressure_measure:List[float],
@@ -202,20 +244,13 @@ class StoreTransients(TangentMethod):
                             points:List[int],
                             time_halfWindow:float=None,
                             point_halfWindow:int=None):
-        if time_halfWindow!=None and point_halfWindow!=None:
-            print("if you want to use time window, please set 'point_halfWindow' to be None, vice versa")
-            return None
-        if time_halfWindow!=None:
-            data_inWindow=self.extract_points_inTimeWindow(pressure_measure,
-                                        pressure_time,
-                                        points,
-                                        time_halfWindow)
-        if point_halfWindow!=None:
-            data_inWindow=self.extract_points_inPointWindow(pressure_measure,
-                                                            pressure_time,
-                                                            points,
-                                                            point_halfWindow)
+
         
+        data_inWindow=self.extract_points_inWindow(pressure_measure,
+                                                    pressure_time,
+                                                    points,
+                                                    time_halfWindow,
+                                                    point_halfWindow)
         pressure_inWindow=data_inWindow['pressure_measure_left']+data_inWindow['pressure_measure_right']
         return pressure_inWindow
     
@@ -293,6 +328,8 @@ class StoreTransients(TangentMethod):
         print("====detected_shutIns",len(shutInperiods))
         filtered_shutIns=self.remove_minorTransients_shutIn(shutInperiods,minor_threshold_shutIn)
         print("====filtered_shutIns",len(filtered_shutIns))
+        if len(filtered_shutIns)==0:
+            raise Exception("No shut-in detected.")
         self.shutInperiods=filtered_shutIns
         self.major_buildUp,self.major_drawDown=self.convert_to_twoLists(filtered_shutIns)
         flowingPeriods=self.find_flowingPeriods(filtered_shutIns) 

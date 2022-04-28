@@ -1,0 +1,199 @@
+import numpy as np
+import pandas as pd
+import statistics
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib import rcParams
+from operator import itemgetter
+from typing import Callable, Dict, List, Set, Tuple
+from scipy.optimize import curve_fit
+import csv
+import json
+from collections import defaultdict
+from scipy.signal import savgol_filter
+import math 
+import bisect
+
+
+class ExtractPoints_inWindow:
+    def __init__(self,
+                #  yCoordinate:List[float],
+                # xCoordinate:List[float],
+                # points:List[int],
+                # time_halfWindow:float=None,
+                # point_halfWindow:int=None,
+                # min_pointsNumber:int=8,
+                 coordinate_names:List[str]
+                 =["pressure_time","pressure_measure"],
+                 mode:str="forCurveFitting"
+                 ):
+        self.coordinate_names=coordinate_names
+        self.mode=mode
+
+    def extract_singlePoint_inPointWindow(self,
+                                          yCoordinate:List[float],
+                                          xCoordinate:List[float],
+                                          point_index:int,
+                                          halfWinow_left:int,
+                                          halfWinow_right:int
+                                          )->Dict[str,List[float]]: 
+
+        """
+        extract pressure measure & time data for a single point
+        in point window  [point_index-halfWinow_left,point_index+halfWinow_right]
+        
+        Args:
+            yCoordinate: pressure measure for the whole dataset
+            xCoordinate: pressure time for the whole dataset
+            point_index: index of points 
+            halfWinow_left: the number of points to be extracted on the left side of the point_index
+            halfWinow_right: the number of points to be extracted on the left side of the point_index
+            
+        Returns:
+            a dictionary, the keys() are as follows:
+            -------------
+            ['point_index',
+            'pressure_time_left', 
+            'pressure_measure_left',
+            'pressure_time_right', 
+            'pressure_measure_right']
+            -------------
+        """
+        
+        
+        if point_index-halfWinow_left<0 or point_index+halfWinow_right>=len(yCoordinate):
+            return None
+        
+        data={"point_index":int(point_index)}
+        
+        #left side
+        sub_measure=yCoordinate[point_index+1-halfWinow_left:point_index+1]
+        sub_time=xCoordinate[point_index+1-halfWinow_left:point_index+1]
+        if self.mode=="forCurveFitting":
+            curve_pressure=[round(measure-sub_measure[-1],6) for measure in sub_measure]
+            curve_time=[round(time-sub_time[-1],6) for time in sub_time]
+            data.update({f"{self.coordinate_names[0]}_left":curve_time,
+                            f"{self.coordinate_names[1]}_left":curve_pressure})
+        elif self.mode=="extractOriginData":
+            data.update({f"{self.coordinate_names[0]}_left":sub_measure,
+                            f"{self.coordinate_names[1]}_left":sub_time})
+        else:
+            raise Exception("'mode' must be 'forCurveFitting' or 'extractOriginData'")
+        
+        
+        #right side
+        sub_measure=yCoordinate[point_index:point_index+halfWinow_right]
+        sub_time=xCoordinate[point_index:point_index+halfWinow_right]
+        
+        if self.mode=="forCurveFitting":
+            curve_pressure=[round(measure-sub_measure[0],6) for measure in sub_measure]
+            curve_time=[round(time-sub_time[0],6) for time in sub_time]
+            data.update({f"{self.coordinate_names[0]}_right":curve_time,
+                        f"{self.coordinate_names[1]}_right":curve_pressure})
+        elif self.mode=="extractOriginData":
+            data.update({f"{self.coordinate_names[0]}_right":sub_measure,
+                            f"{self.coordinate_names[1]}_right":sub_time})
+        else:
+            raise Exception("'mode' must be 'forCurveFitting' or 'extractOriginData'")
+        return data
+    
+    
+    
+    def extract_singlePoint_inTimeWindow(self,
+                                    yCoordinate:List[float],
+                                    xCoordinate:List[float],
+                                    point_index:int,
+                                    time_halfWindow:float,
+                                    min_pointsNumber:int=8)->Dict[str,List[float]]: 
+        """
+        extract pressure measure & time data for 'points' 
+        in 'timewindow' 
+        if the number of points in the half timewindow is less than 'min_pointsNumber'
+        then we extract 'min_pointsNumber' points
+        
+        Args:
+            yCoordinate: pressure measure for the whole dataset
+            xCoordinate: pressure time for the whole dataset
+            points: a list contains index of points 
+            time_halfWindow: half timewindow
+            
+        Returns:
+            a dataframe containing five columns, each row for a point
+            -------------
+            columns=['point_index',
+                    'pressure_time_left', 
+                    'pressure_measure_left',
+                    'pressure_time_right', 
+                    'pressure_measure_right']
+            -------------
+        """     
+        #convert timewindow to point window 
+        time_leftStart=xCoordinate[point_index]-time_halfWindow
+        time_rightEnd=xCoordinate[point_index]+time_halfWindow
+        if time_leftStart>=0 and time_rightEnd<=xCoordinate[-1]:
+            halfWinow_left=point_index-bisect.bisect_left(xCoordinate, time_leftStart) 
+            
+            if halfWinow_left<min_pointsNumber:
+                halfWinow_left=min_pointsNumber
+            
+            halfWinow_right=bisect.bisect_left(xCoordinate, time_rightEnd)-1-point_index
+            if halfWinow_right<min_pointsNumber:
+                halfWinow_right=min_pointsNumber
+        
+            data=self.extract_singlePoint_inPointWindow(yCoordinate,
+                                                        xCoordinate,
+                                                        point_index,
+                                                        halfWinow_left,
+                                                        halfWinow_right)
+            
+                
+        return data
+    
+    def extract_singlePoint_inWindow(self,
+                                yCoordinate:List[float],
+                                xCoordinate:List[float],
+                                point_index:int,
+                                time_halfWindow:float=None,
+                                point_halfWindow:int=None,
+                                min_pointsNumber:int=8)->Dict[str,List[float]]: 
+        if time_halfWindow!=None and point_halfWindow!=None:
+            raise Exception("either 'time window' or 'point_halfWindow' should set to be None")
+        if time_halfWindow!=None:
+            data=self.extract_singlePoint_inTimeWindow(yCoordinate,
+                                                                xCoordinate,
+                                                                point_index,
+                                                                time_halfWindow,
+                                                                min_pointsNumber)
+        if point_halfWindow!=None:
+            data=self.extract_singlePoint_inPointWindow(yCoordinate,
+                                                            xCoordinate,
+                                                            point_index,
+                                                            point_halfWindow,
+                                                            point_halfWindow)
+        return data
+    
+    def extract_points_inWindow(self,
+                                yCoordinate:List[float],
+                                xCoordinate:List[float],
+                                points:List[int],
+                                time_halfWindow:float=None,
+                                point_halfWindow:int=None,
+                                min_pointsNumber:int=8)->pd.DataFrame:
+        data_inWindow=pd.DataFrame(columns=['point_index',
+                                f"{self.coordinate_names[0]}_left", 
+                                f"{self.coordinate_names[1]}_left",
+                                f"{self.coordinate_names[0]}_right", 
+                                f"{self.coordinate_names[1]}_right"])
+        for point_index in points:
+            data=self.extract_singlePoint_inWindow(yCoordinate,
+                                                   xCoordinate,
+                                                   point_index,
+                                                   time_halfWindow,
+                                                    point_halfWindow,
+                                                    min_pointsNumber)
+            
+            if data is not None:
+                data_inWindow=data_inWindow.append(data,ignore_index=True)
+        return data_inWindow
+            
+

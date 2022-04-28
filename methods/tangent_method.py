@@ -14,6 +14,7 @@ import math
 import bisect
 
 from base_classes import CurveParametersCalc,SaveNLoad
+from extract_points import ExtractPoints_inWindow
 
 class TangentMethod(CurveParametersCalc,SaveNLoad):
     def __init__(self, 
@@ -73,19 +74,13 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
         for the given points, get the left & right tangents for each point in pointWindow or timeWindow
         """
         fitting_type="polynomial"     
-        if time_halfWindow!=None and point_halfWindow!=None:
-            print("if you want to use time window, please set 'point_halfWindow' to be None, vice versa")
-            return None
-        if time_halfWindow!=None:
-            data_inWindow=self.extract_points_inTimeWindow(pressure_measure,
-                                        pressure_time,
-                                        points,
-                                        time_halfWindow)
-        if point_halfWindow!=None:
-            data_inWindow=self.extract_points_inPointWindow(pressure_measure,
-                                                            pressure_time,
-                                                            points,
-                                                            point_halfWindow)
+   
+        data_inWindow=self.extract_points_inWindow(pressure_measure,
+                                                    pressure_time,
+                                                    points,
+                                                    time_halfWindow,
+                                                    point_halfWindow,
+                                                    self.min_pointsNumber)
         # display(data_inWindow)
         parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type,polynomial_order,show_plot=False)
         # display(parameters_allCurves)
@@ -291,13 +286,7 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
         """
         print("==================")
         print(f"start to predict using tangent, the length of input points: {len(points)}")
-#         self.buildUp_or_drawDown=""
-        
-        # deltaTangent_criterion=self.get_deltadeltaTangent_criterion(fitting_type)
-        # data_inWindow=self.extract_points_inPointWindow(pressure_measure,pressure_time,points,point_halfWindow)
-        # parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type,polynomial_order)     
-        # tangent_forPredict_get=self.get_tangent(parameters_allCurves,fitting_type)
-        # display(tangent_forPredict_get)
+
         tangent_forPredict=self.produce_tangent_inWindow(pressure_measure,
                                                         pressure_time,
                                                         points,
