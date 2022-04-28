@@ -17,12 +17,6 @@ import bisect
 
 class ExtractPoints_inWindow:
     def __init__(self,
-                #  yCoordinate:List[float],
-                # xCoordinate:List[float],
-                # points:List[int],
-                # time_halfWindow:float=None,
-                # point_halfWindow:int=None,
-                # min_pointsNumber:int=8,
                  coordinate_names:List[str]
                  =["pressure_time","pressure_measure"],
                  mode:str="forPatternRecognition"
@@ -39,7 +33,7 @@ class ExtractPoints_inWindow:
                                           )->Dict[str,List[float]]: 
 
         """
-        extract pressure measure & time data for a single point
+        extract data for a single point
         in point window  [point_index-halfWinow_left,point_index+halfWinow_right]
         
         Args:
@@ -50,7 +44,7 @@ class ExtractPoints_inWindow:
             halfWinow_right: the number of points to be extracted on the left side of the point_index
             
         Returns:
-            a dictionary, the keys() are as follows:
+            a dictionary, a example of keys() is as follows:
             -------------
             ['point_index',
             'pressure_time_left', 
@@ -59,9 +53,6 @@ class ExtractPoints_inWindow:
             'pressure_measure_right']
             -------------
         """
-        # yCoordinate=list(yCoordinate)
-        # xCoordinate=list(xCoordinate)
-        
         if point_index-halfWinow_left<0 or point_index+halfWinow_right>=len(yCoordinate):
             return None
         
@@ -151,9 +142,26 @@ class ExtractPoints_inWindow:
                                 point_index:int,
                                 time_halfWindow:float=None,
                                 point_halfWindow:int=None,
-                                min_pointsNumber:int=8)->Dict[str,List[float]]: 
-    
-        
+                                min_pointsNumber:int=8)->Dict[str,List[float]]:
+        """
+        extract data for a single point in a time window or point
+        Args:
+            yCoordinate: measurements
+            xCoordinate: time
+            time_halfWindow: set to be None, when use point window
+            point_halfWindow: set to be None, when use time window
+            min_pointsNumber: the minimum number of points that should be included for a time window
+        Returns:
+            A dictionary, a example of keys is as follows:
+            ------------------
+            ['point_index',
+            'pressure_time_left', 
+            'pressure_measure_left',
+            'pressure_time_right', 
+            'pressure_measure_right']
+            --------------------- 
+        """ 
+      
         if time_halfWindow!=None and point_halfWindow!=None:
             raise Exception("either 'time window' or 'point_halfWindow' should set to be None")
         if time_halfWindow!=None:
