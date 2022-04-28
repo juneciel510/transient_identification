@@ -4,8 +4,9 @@ import pandas as pd
 import math
 import statistics
 import bisect
+from extract_points import ExtractPoints_inWindow
 
-class DerivativeMethod:
+class DerivativeMethod(ExtractPoints_inWindow):
     def __init__(self,
                  pressure_df:pd.DataFrame,
                 colum_names:Dict[str,Dict[str,str]]
@@ -16,6 +17,9 @@ class DerivativeMethod:
                 "rate":{"time":"Elapsed time",
                         "measure":"Liquid rate"}}
                 ):
+        ExtractPoints_inWindow.__init__(self,
+                                coordinate_names=["pressure_time","first_order_derivative"],
+                                mode="extractOriginData")
         self.pressure_df=pressure_df
         self.pressure_measure=pressure_df[colum_names["pressure"]["measure"]]
         self.pressure_time=pressure_df[colum_names["pressure"]["time"]]
@@ -77,15 +81,15 @@ class DerivativeMethod:
                             filtered_points.append(point_index)
             return filtered_points   
          
-    def detect_breakpoints_singlePoint(self,
-                        #    derivative_lst:List[float],
+    def detect_breakpoints_rangeSingleFOD(self,
+                           derivative_lst:List[float],
                            points:List[int],
                            close_zero_threshold:float,
                            tuning_parameters:float
                            )->(List[int],List[int]):
         buildUp=[]
         drawDown=[]
-        derivative_lst=list(self.first_order_derivative)
+        # derivative_lst=list(self.first_order_derivative)
         for point_index in points:
             if point_index+1>len(derivative_lst)-1:
                 continue
@@ -95,22 +99,21 @@ class DerivativeMethod:
                         drawDown.append(point_index+1)
         return buildUp, drawDown
         
+
     
-            
-    def avg_derivative_inTimeWindow(self,
-                                        derivative_lst:List[float],
-                                        pressure_time:List[float],
-                                        points:List[int],
-                                        time_halfWindow:float,
-                                        min_pointsNumber:int=8)->pd.DataFrame: 
+    def avg_derivative_inWindow(self,
+                                derivative_lst:List[float],       
+                                pressure_time:List[float],
+                                points:List[int],
+                                time_halfWindow:float=None,
+                                point_halfWindow:int=None,
+                                min_pointsNumber:int=8)->pd.DataFrame: 
         """
-        extract pressure derivative & time data for 'points' 
-        in 'timewindow' 
-        if the number of points in the half timewindow is less than 'min_pointsNumber'
-        then we extract 'min_pointsNumber' points
+        extract derivative & time data for 'points' 
+        in 'window' 
         
         Args:
-            derivative_lst: pressure derivative for the whole dataset
+            derivative_lst: derivative for the whole dataset
             pressure_time: pressure time for the whole dataset
             points: a list contains index of points 
             time_halfWindow: half timewindow
@@ -119,143 +122,41 @@ class DerivativeMethod:
             a dataframe containing five columns, each row for a point
             -------------
             columns=['point_index',
-                    'avg_derivative_left', 
+                    'avg_derivative_left',
                     'avg_derivative_right']
             -------------
         """
         # print("-------start to extract points data inTimeWindow")
-        pressure_time=list(pressure_time)
         avg_derivative_inWindow=pd.DataFrame(columns=['point_index',
                                 'avg_derivative_left',
                                 'avg_derivative_right'])
         
-        
-        for point_index in points:
-            if point_index>(len(derivative_lst)-min_pointsNumber) or point_index<min_pointsNumber:
+        # points_valid=[point for point in points if point-point_halfWindow>=0 and point+point_halfWindow<len(derivative_lst) ]
+        for point_index in points: 
+            data=self.extract_singlePoint_inWindow(derivative_lst,
+                                                        pressure_time,
+                                                        point_index,
+                                                        time_halfWindow,
+                                                        point_halfWindow,
+                                                        min_pointsNumber)
+            if data is None:
                 continue
-            #convert timewindow to point window 
-            time_leftStart=pressure_time[point_index]-time_halfWindow
-            time_rightEnd=pressure_time[point_index]+time_halfWindow
-            if time_leftStart>=0 and time_rightEnd<=pressure_time[-1]:
-                halfWinow_left=point_index-bisect.bisect_left(pressure_time, time_leftStart) 
-                
-                if halfWinow_left<min_pointsNumber:
-                    halfWinow_left=min_pointsNumber
-                
-                halfWinow_right=bisect.bisect_left(pressure_time, time_rightEnd)-1-point_index
-                if halfWinow_right<min_pointsNumber:
-                    halfWinow_right=min_pointsNumber
+            #left side
+            sub_derivative=data[f"{self.coordinate_names[1]}_left"]
+            avg_derivative=round(sum(sub_derivative)/len(sub_derivative),6)
+            data.update({"avg_derivative_left":avg_derivative})
             
-                data=self.extract_singlePoint_inPointWindow(derivative_lst,point_index,halfWinow_left,halfWinow_right)
+            #right side
+            sub_derivative=data[f"{self.coordinate_names[1]}_right"]
+            avg_derivative=round(sum(sub_derivative)/len(sub_derivative),6)
+            data.update({"avg_derivative_right":avg_derivative})
             
-                # data={"point_index":int(point_index)}
         
-                # #left side
-                # sub_derivative=derivative_lst[point_index+1-halfWinow_left:point_index+1]
-                # avg_derivative=round(sum(sub_derivative)/len(sub_derivative),6)
-                # data.update({"avg_derivative_left":avg_derivative})
-                
-                # #right side
-                # sub_derivative=derivative_lst[point_index:point_index+halfWinow_right]
-                # avg_derivative=round(sum(sub_derivative)/len(sub_derivative),6)
-                # data.update({"avg_derivative_right":avg_derivative})
-                avg_derivative_inWindow=avg_derivative_inWindow.append(data,ignore_index=True)
+            avg_derivative_inWindow=avg_derivative_inWindow.append(data,ignore_index=True)
         return avg_derivative_inWindow
-
-    def avg_derivative_inPointWindow(self,
-                                    derivative_lst:List[float],
-                                    points:List[int],
-                                    point_halfWindow:int)->pd.DataFrame: 
-        """
-        extract pressure measure & time data for 'points' 
-        in 'pointwindow' 
-        e.g. 8 points at the left & 8 points at the right
-        
-        Args:
-            pressure_measure: pressure measure for the whole dataset
-            pressure_time: pressure time for the whole dataset
-            points: a list contains index of points 
-            time_halfWindow: half timewindow
-            
-        Returns:
-            a dataframe containing five columns, each row for a point
-            -------------
-            columns=['point_index',
-                    'pressure_time_left', 
-                    'pressure_measure_left',
-                    'pressure_time_right', 
-                    'pressure_measure_right']
-            -------------
-        """
-        # print("-------start to extract points data inTimeWindow")
-        avg_derivative_inWindow=pd.DataFrame(columns=['point_index',
-                                'avg_derivative_left',
-                                'avg_derivative_right'])
-        
-        points_valid=[point for point in points if point-point_halfWindow>=0 and point+point_halfWindow<len(derivative_lst) ]
-        for point_index in points_valid: 
-                # data={"point_index":int(point_index)}
-                # #left side
-                # sub_derivative=derivative_lst[point_index+1-point_halfWindow:point_index+1]
-                # avg_derivative=round(sum(sub_derivative)/len(sub_derivative),6)
-                # data.update({"avg_derivative_left":avg_derivative})
-                
-                # #right side
-                # sub_derivative=derivative_lst[point_index:point_index+point_halfWindow]
-                # avg_derivative=round(sum(sub_derivative)/len(sub_derivative),6)
-                # data.update({"avg_derivative_right":avg_derivative})
-                data=self.extract_singlePoint_inPointWindow(derivative_lst,point_index,point_halfWindow,point_halfWindow)
-            
-                avg_derivative_inWindow=avg_derivative_inWindow.append(data,ignore_index=True)
-        return avg_derivative_inWindow
-
-                             
-    def extract_singlePoint_inPointWindow(self,
-                                          derivative_lst:List[float],
-                                          point_index:int,
-                                          halfWinow_left:int,
-                                          halfWinow_right:int
-                                          )->Dict[str,List[float]]: 
-
-        """
-        extract average pressure derivative & time data for a single point
-        in point window  [point_index-halfWinow_left,point_index+halfWinow_right]
-        
-        Args:
-            derivative_lst: pressure derivative for the whole dataset
-            pressure_time: pressure time for the whole dataset
-            point_index: index of points 
-            halfWinow_left: the number of points to be extracted on the left side of the point_index
-            halfWinow_right: the number of points to be extracted on the left side of the point_index
-            
-        Returns:
-            a dictionary, the keys() are as follows:
-            -------------
-            ['point_index',
-            'avg_derivative_left',
-            'avg_derivative_right']
-            -------------
-        """
-        data={"point_index":int(point_index)}
-        
-        #left side
-        sub_derivative=derivative_lst[point_index+1-halfWinow_left:point_index+1]
-        # sub_time=pressure_time[point_index+1-halfWinow_left:point_index+1]
-        # curve_pressure=[round(derivative-sub_derivative[-1],6) for derivative in sub_derivative]
-        # curve_time=[round(time-sub_time[-1],6) for time in sub_time]
-        avg_derivative=round(sum(sub_derivative)/len(sub_derivative),6)
-        data.update({"avg_derivative_left":avg_derivative})
-        
-        #right side
-        sub_derivative=derivative_lst[point_index:point_index+halfWinow_right]
-        # sub_time=pressure_time[point_index:point_index+halfWinow_right]
-        # curve_pressure=[round(derivative-sub_derivative[0],6) for derivative in sub_derivative]
-        # curve_time=[round(time-sub_time[0],6) for time in sub_time]
-        avg_derivative=round(sum(sub_derivative)/len(sub_derivative),6)
-        data.update({"avg_derivative_right":avg_derivative})
-        return data
-
-    def detect_breakpoints(self,
+    
+    
+    def use_rangeFOD(self,
                            avg_derivative:pd.DataFrame,
                            close_zero_threshold:float,
                            tuning_parameters:float
@@ -272,7 +173,7 @@ class DerivativeMethod:
                         drawDown.append(row["point_index"])
         return buildUp, drawDown
         
-    def detect_breakpoints_2(self,
+    def use_deltaFOD(self,
                              avg_derivative:pd.DataFrame,
                              deltaDerivative_tuning:float
                              )->(List[int],List[int]):
@@ -289,28 +190,23 @@ class DerivativeMethod:
                 
         return buildup,drawdown
         
-    def detect_breakpoints_3(self,
+    def detect_breakpoints_rangeAvgFOD(self,
                              points:pd.DataFrame,
                              close_zero_threshold:float,
                              tuning_parameters:float,
                              point_halfWindow:int=None,
                              time_halfWindow:float=None,
+                             min_pointsNumber:int=8
                              )->(List[int],List[int]):
           
-        if point_halfWindow!=None and time_halfWindow!=None:
-            print("point_halfWindow and time_halfWindow, one of them should be none")
-            
-        if point_halfWindow!=None:            
-            avg_derivative_inWindow=self.avg_derivative_inPointWindow(self.first_order_derivative,
-                                                                    points,
-                                                                    point_halfWindow)
-        if time_halfWindow!=None:            
-            avg_derivative_inWindow=self.avg_derivative_inTimeWindow(self.first_order_derivative,
-                                                                     self.pressure_time,
-                                                                    points,
-                                                                    time_halfWindow)
+        avg_derivative_inWindow=self.avg_derivative_inTimeWindow(self.first_order_derivative,
+                                                                self.pressure_time,
+                                                                points,
+                                                                time_halfWindow,
+                                                                point_halfWindow,
+                                                                min_pointsNumber)
         
-        buildup,drawdown=self.detect_breakpoints(avg_derivative_inWindow,
+        buildup,drawdown=self.use_rangeFOD(avg_derivative_inWindow,
                                                 close_zero_threshold,
                                                 tuning_parameters)
         
@@ -321,29 +217,72 @@ class DerivativeMethod:
                              deltaDerivative_tuning:float,
                              point_halfWindow:int=None,
                              time_halfWindow:float=None,
+                             min_pointsNumber:int=8
                              )->(List[int],List[int]):
-          
-        if point_halfWindow!=None and time_halfWindow!=None:
-            print("point_halfWindow and time_halfWindow, one of them should be none")
             
-        if point_halfWindow!=None:            
-            avg_derivative_inWindow=self.avg_derivative_inPointWindow(self.first_order_derivative,
-                                                                    points,
-                                                                    point_halfWindow)
-        if time_halfWindow!=None:            
-            avg_derivative_inWindow=self.avg_derivative_inTimeWindow(self.first_order_derivative,
-                                                                     self.pressure_time,
-                                                                    points,
-                                                                    time_halfWindow)
+        avg_derivative_inWindow=self.avg_derivative_inTimeWindow(self.first_order_derivative,
+                                                                self.pressure_time,
+                                                                points,
+                                                                time_halfWindow,
+                                                                point_halfWindow,
+                                                                min_pointsNumber)
         
-        buildup=[]
-        drawdown=[]
-        for index,row in avg_derivative_inWindow.iterrows():
-            if row["avg_derivative_right"]>0 and (row["avg_derivative_right"]-row["avg_derivative_left"])>deltaDerivative_tuning*abs(self.std_1):
-                    buildup.append(int(row["point_index"]))
-            if row["avg_derivative_right"]<0 and (row["avg_derivative_right"]-row["avg_derivative_left"])<-deltaDerivative_tuning*abs(self.std_1):
-                    drawdown.append(int(row["point_index"]))
+        buildup,drawdown=self.use_deltaFOD(avg_derivative_inWindow,deltaDerivative_tuning)
+        # buildup=[]
+        # drawdown=[]
+        # for index,row in avg_derivative_inWindow.iterrows():
+        #     if row["avg_derivative_right"]>0 and (row["avg_derivative_right"]-row["avg_derivative_left"])>deltaDerivative_tuning*abs(self.std_1):
+        #             buildup.append(int(row["point_index"]))
+        #     if row["avg_derivative_right"]<0 and (row["avg_derivative_right"]-row["avg_derivative_left"])<-deltaDerivative_tuning*abs(self.std_1):
+        #             drawdown.append(int(row["point_index"]))
         
         return buildup,drawdown
+    
+    def detect_breakpoints_signSwitch(self,
+                         derivative_lst:List[float],
+                        pressure_time:List[float],
+                         points:List[int],
+                            time_halfWindow:float=None,
+                            point_halfWindow:int=15,
+                            min_pointsNumber:int=8)->List[int]:
+        """
+        search a point where the derivative changed its sign and 
+        then remains the same sign for following points (period) 
+        - in this case, first point of the derivative change is the break-point
+        """
+        buildup=[]
+        drawdown=[]
+        data_inWindow=self.extract_points_inWindow(derivative_lst,
+                                            pressure_time,
+                                            points,
+                                            time_halfWindow,
+                                            point_halfWindow,
+                                            min_pointsNumber)
+        print("--------------data_inWindow")
+        display(data_inWindow)
+        for i in range(len(data_inWindow)):
+            data_rightWindow=data_inWindow[f"{self.coordinate_names[1]}_right"][i]
+            point_type=self.checkPoint_bysign(data_rightWindow)
+            if point_type=="buildUp":
+                buildup.append(data_inWindow["point_index"][i])
+            elif point_type=="drawDown":
+                drawdown.append(data_inWindow["point_index"][i])
+            else:
+                pass
+        return buildup,drawdown
+                     
+    
+    def checkPoint_bysign(self,data_rightWindow):
+        try:
+            sign_remainings=[data_rightWindow[i]>0 for i in range(1,len(data_rightWindow)) if data_rightWindow[i]!=0]
+        except:
+            print("-----------data_rightWindow",data_rightWindow)
+        if all(sign_remainings) and data_rightWindow[0]<=0:
+            return "buildUp"
+        elif (not any(sign_remainings)) and data_rightWindow[0]>=0:
+            return "drawDown"
+        else:
+            return "Not break point"    
+        
         
                 

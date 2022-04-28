@@ -25,7 +25,7 @@ class ExtractPoints_inWindow:
                 # min_pointsNumber:int=8,
                  coordinate_names:List[str]
                  =["pressure_time","pressure_measure"],
-                 mode:str="forCurveFitting"
+                 mode:str="forPatternRecognition"
                  ):
         self.coordinate_names=coordinate_names
         self.mode=mode
@@ -59,42 +59,38 @@ class ExtractPoints_inWindow:
             'pressure_measure_right']
             -------------
         """
-        
+        # yCoordinate=list(yCoordinate)
+        # xCoordinate=list(xCoordinate)
         
         if point_index-halfWinow_left<0 or point_index+halfWinow_right>=len(yCoordinate):
             return None
         
         data={"point_index":int(point_index)}
         
-        #left side
-        sub_measure=yCoordinate[point_index+1-halfWinow_left:point_index+1]
-        sub_time=xCoordinate[point_index+1-halfWinow_left:point_index+1]
-        if self.mode=="forCurveFitting":
-            curve_pressure=[round(measure-sub_measure[-1],6) for measure in sub_measure]
-            curve_time=[round(time-sub_time[-1],6) for time in sub_time]
-            data.update({f"{self.coordinate_names[0]}_left":curve_time,
-                            f"{self.coordinate_names[1]}_left":curve_pressure})
-        elif self.mode=="extractOriginData":
-            data.update({f"{self.coordinate_names[0]}_left":sub_measure,
-                            f"{self.coordinate_names[1]}_left":sub_time})
-        else:
-            raise Exception("'mode' must be 'forCurveFitting' or 'extractOriginData'")
+        sub_measure_left=yCoordinate[point_index+1-halfWinow_left:point_index+1]
+        sub_time_left=xCoordinate[point_index+1-halfWinow_left:point_index+1]
         
+        sub_measure_right=yCoordinate[point_index:point_index+halfWinow_right]
+        sub_time_right=xCoordinate[point_index:point_index+halfWinow_right]
         
-        #right side
-        sub_measure=yCoordinate[point_index:point_index+halfWinow_right]
-        sub_time=xCoordinate[point_index:point_index+halfWinow_right]
+        sub_measures=[sub_measure_left,sub_measure_right]
+        sub_times=[sub_time_left,sub_time_right]
+        names=["left","right"]
         
-        if self.mode=="forCurveFitting":
-            curve_pressure=[round(measure-sub_measure[0],6) for measure in sub_measure]
-            curve_time=[round(time-sub_time[0],6) for time in sub_time]
-            data.update({f"{self.coordinate_names[0]}_right":curve_time,
-                        f"{self.coordinate_names[1]}_right":curve_pressure})
-        elif self.mode=="extractOriginData":
-            data.update({f"{self.coordinate_names[0]}_right":sub_measure,
-                            f"{self.coordinate_names[1]}_right":sub_time})
-        else:
-            raise Exception("'mode' must be 'forCurveFitting' or 'extractOriginData'")
+        for sub_measure, sub_time, name in zip(sub_measures, sub_times,names):
+            sub_measure = list(np.around(np.array(sub_measure),6))
+            sub_time = list(np.around(np.array(sub_time),6))
+            if self.mode=="forPatternRecognition":
+                curve_pressure=[round(measure-sub_measure[-1],6) for measure in sub_measure]
+                curve_time=[round(time-sub_time[-1],6) for time in sub_time]
+                data.update({f"{self.coordinate_names[0]}_{name}":curve_time,
+                                f"{self.coordinate_names[1]}_{name}":curve_pressure})
+            elif self.mode=="extractOriginData":
+                data.update({f"{self.coordinate_names[0]}_{name}":sub_time,
+                                f"{self.coordinate_names[1]}_{name}":sub_measure})
+            else:
+                raise Exception("'mode' must be 'forPatternRecognition' or 'extractOriginData'")
+                
         return data
     
     
@@ -130,7 +126,7 @@ class ExtractPoints_inWindow:
         #convert timewindow to point window 
         time_leftStart=xCoordinate[point_index]-time_halfWindow
         time_rightEnd=xCoordinate[point_index]+time_halfWindow
-        if time_leftStart>=0 and time_rightEnd<=xCoordinate[-1]:
+        if time_leftStart>=0 and time_rightEnd<=xCoordinate[len(xCoordinate)-1]:
             halfWinow_left=point_index-bisect.bisect_left(xCoordinate, time_leftStart) 
             
             if halfWinow_left<min_pointsNumber:
@@ -147,7 +143,7 @@ class ExtractPoints_inWindow:
                                                         halfWinow_right)
             
                 
-        return data
+            return data
     
     def extract_singlePoint_inWindow(self,
                                 yCoordinate:List[float],
@@ -156,6 +152,8 @@ class ExtractPoints_inWindow:
                                 time_halfWindow:float=None,
                                 point_halfWindow:int=None,
                                 min_pointsNumber:int=8)->Dict[str,List[float]]: 
+    
+        
         if time_halfWindow!=None and point_halfWindow!=None:
             raise Exception("either 'time window' or 'point_halfWindow' should set to be None")
         if time_halfWindow!=None:
@@ -170,7 +168,8 @@ class ExtractPoints_inWindow:
                                                             point_index,
                                                             point_halfWindow,
                                                             point_halfWindow)
-        return data
+        if data is not None:
+            return data
     
     def extract_points_inWindow(self,
                                 yCoordinate:List[float],

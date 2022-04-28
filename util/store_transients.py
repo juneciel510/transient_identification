@@ -198,46 +198,7 @@ class StoreTransients(TangentMethod):
         index_maxStd=std_points.index(max(std_points))
         return points[index_maxStd]
     
-    def get_points_signSwitch(self,
-                         pressure_measure:List[float],
-                        pressure_time:List[float],
-                         points:List[int],
-                            time_halfWindow:float=None,
-                            point_halfWindow:int=15)->List[int]:
-        """
-        search a point where the derivative changed its sign and 
-        then remains the same sign for following points (period) 
-        - in this case, first point of the derivative change is the break-point
-        """
-        points_buildUp=[]
-        points_drawDown=[]
-        data_inWindow=self.extract_points_inWindow(pressure_measure,
-                                            pressure_time,
-                                            points,
-                                            time_halfWindow,
-                                            point_halfWindow)
-        for i in range(len(data_inWindow)):
-            pressure_measure_rightWindow=data_inWindow["pressure_measure_right"][i]
-            point_type=self.data_rightWindow(pressure_measure_rightWindow)
-            if point_type=="buildUp":
-                points_buildUp.append(data_inWindow["point_index"][i])
-            elif point_type=="drawDown":
-                points_drawDown.append(data_inWindow["point_index"][i])
-            else:
-                pass
-                     
-    
-    def checkPoint_bysign(self,data_rightWindow):
-    
-        sign_remainings=[data_rightWindow[i]>0 for i in range(1,len(data_rightWindow)) if data_rightWindow[i]!=0]
 
-        if all(sign_remainings) and data_rightWindow[0]<=0:
-            return "buildUp"
-        elif (not any(sign_remainings)) and data_rightWindow[0]>=0:
-            return "drawDown"
-        else:
-            return "Not break point"    
-        
     def get_pressure_inWindow(self,
                               pressure_measure:List[float],
                             pressure_time:List[float],

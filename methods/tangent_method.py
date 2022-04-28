@@ -27,7 +27,7 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
                 filePath_learnedPattern="../data_output/Learned_Pattern.jason",
             )->None:
     
-        CurveParametersCalc.__init__(self)
+        CurveParametersCalc.__init__(self,mode="extractOriginData")
         self.min_pointsNumber=min_pointsNumber
         self.tangent_type=tangent_type
         self.polynomial_order=polynomial_order
