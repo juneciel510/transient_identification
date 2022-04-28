@@ -321,10 +321,6 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
         print("==================")
         print("start to predict using tangent...")
 
-        
-        # data_inWindow=self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,self.time_halfWindow_forPredict)
-        # parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type,polynomial_order =3,show_plot=True)        
-        # tangent_forPredict=self.get_tangent(parameters_allCurves,fitting_type)
         tangent_forPredict=self.produce_tangent_inWindow(pressure_measure,
                                                         pressure_time,
                                                         points,

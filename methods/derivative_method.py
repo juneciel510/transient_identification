@@ -89,7 +89,6 @@ class DerivativeMethod(ExtractPoints_inWindow):
                            )->(List[int],List[int]):
         buildUp=[]
         drawDown=[]
-        # derivative_lst=list(self.first_order_derivative)
         for point_index in points:
             if point_index+1>len(derivative_lst)-1:
                 continue
@@ -228,13 +227,6 @@ class DerivativeMethod(ExtractPoints_inWindow):
                                                                 min_pointsNumber)
         
         buildup,drawdown=self.use_deltaFOD(avg_derivative_inWindow,deltaDerivative_tuning)
-        # buildup=[]
-        # drawdown=[]
-        # for index,row in avg_derivative_inWindow.iterrows():
-        #     if row["avg_derivative_right"]>0 and (row["avg_derivative_right"]-row["avg_derivative_left"])>deltaDerivative_tuning*abs(self.std_1):
-        #             buildup.append(int(row["point_index"]))
-        #     if row["avg_derivative_right"]<0 and (row["avg_derivative_right"]-row["avg_derivative_left"])<-deltaDerivative_tuning*abs(self.std_1):
-        #             drawdown.append(int(row["point_index"]))
         
         return buildup,drawdown
     
@@ -258,8 +250,6 @@ class DerivativeMethod(ExtractPoints_inWindow):
                                             time_halfWindow,
                                             point_halfWindow,
                                             min_pointsNumber)
-        print("--------------data_inWindow")
-        display(data_inWindow)
         for i in range(len(data_inWindow)):
             data_rightWindow=data_inWindow[f"{self.coordinate_names[1]}_right"][i]
             point_type=self.checkPoint_bysign(data_rightWindow)
@@ -273,10 +263,9 @@ class DerivativeMethod(ExtractPoints_inWindow):
                      
     
     def checkPoint_bysign(self,data_rightWindow):
-        try:
-            sign_remainings=[data_rightWindow[i]>0 for i in range(1,len(data_rightWindow)) if data_rightWindow[i]!=0]
-        except:
-            print("-----------data_rightWindow",data_rightWindow)
+      
+        sign_remainings=[data_rightWindow[i]>0 for i in range(1,len(data_rightWindow)) if data_rightWindow[i]!=0]
+ 
         if all(sign_remainings) and data_rightWindow[0]<=0:
             return "buildUp"
         elif (not any(sign_remainings)) and data_rightWindow[0]>=0:
