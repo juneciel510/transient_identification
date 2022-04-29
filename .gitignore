@@ -2,7 +2,7 @@
 __pycache__
 1.png
 
-source_code/
+source_code_copy/
 ignored/
 data_output/
 data_input/
@@ -22,3 +22,4 @@ experiments_jupyterNotebook/6_DeltaTangent_N_FFOD-Copy1.ipynb
 experiments_jupyterNotebook/Untitled.ipynb
 experiments_jupyterNotebook/Untitled1.ipynb
 
+methods/baseline_method.py
