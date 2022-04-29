@@ -170,14 +170,21 @@ class ExtractPoints_inWindow:
                                                                 point_index,
                                                                 time_halfWindow,
                                                                 min_pointsNumber)
+            return data
         if point_halfWindow!=None:
             data=self.extract_singlePoint_inPointWindow(yCoordinate,
                                                             xCoordinate,
                                                             point_index,
                                                             point_halfWindow,
                                                             point_halfWindow)
-        if data is not None:
             return data
+        
+        raise Exception(f"check time window:{time_halfWindow} and point window:{point_halfWindow}")
+        
+        
+        
+        
+        
     
     def extract_points_inWindow(self,
                                 yCoordinate:List[float],
@@ -201,6 +208,7 @@ class ExtractPoints_inWindow:
             
             if data is not None:
                 data_inWindow=data_inWindow.append(data,ignore_index=True)
+        print("--------data_inWindow:",data_inWindow)
         return data_inWindow
             
 

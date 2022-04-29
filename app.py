@@ -104,43 +104,71 @@ input_df_pressure, input_df_rate=upload_N_preview()
 st.markdown("")
 st.markdown("")
 
-         
 st.markdown("### 🔑 Select Method & Parameters")
-with st.form(key="my_form"):
-    c1, c2 = st.columns(2)
+with st.expander("",expanded=True):
+    # st.markdown("##### methods")
+    c1, c2,c3 = st.columns(3)
     with c1:
         denoise = st.radio(
             f"Denoise",
             options=["Yes", "No"],
             help="Select yes if you want to denoise the pressure measurements.",
         )
-    # methods = st.multiselect(
-    #     "Methods",
-    #     options=["DeltaTangent","DeltaFOD","PatternRecognition"],
-    #     help="Select the methods you want to use for transients identification.",
-    #     default=["DeltaTangent"],
-    # )
+
     with c2:
         methods = st.radio(
             "Methods",
             options=["DeltaTangent","DeltaFOD","PatternRecognition"],
             help="Select the methods you want to use for transients identification. Recommend using *DeltaTangent*",
         )
-    
-    print("methods",methods)
-    with st.expander("Adjust parameters",expanded=True):
-        st.markdown("##### Parameters")
-        parameters1 = user_input_parameters()
+
+    with c3:
+        window_type = st.radio(
+            "Window",
+            options=["Point Window","Time Window"],
+            help="Select window type for methods.",
+        )
         
-    
+
+         
+
+    with st.form(key="my_form"):   
+        print("---------window_type",window_type)
         
-    submit_button = st.form_submit_button(label="Submit")
-    print("submit_button",submit_button)
-    parameters={"Methods":methods, "Denoise": denoise}
-    parameters.update(parameters1)    
-    # st.write(pd.DataFrame(parameters, index=[0]))
+        # with st.expander("Adjust parameters",expanded=True):
+        #     st.markdown("##### Parameters")
+        
+        parameters1 = user_input_parameters(window_type, methods)
+            
+        
+            
+        submit_button = st.form_submit_button(label="Submit")
+        print("submit_button",submit_button)
+        parameters={"Methods":methods, "Denoise": denoise}
+        parameters.update(parameters1) 
+        print("============parameters",parameters)   
+       
+        
+    # with st.expander("Select Method",expanded=True):
+        
+    #     print("---------window_type",window_type)
+        
+    #     # with st.expander("Adjust parameters",expanded=True):
+    #     #     st.markdown("##### Parameters")
+    #     parameters1 = user_input_parameters(window_type)
+            
+        
+            
+    # submit_button = st.button("Submit")
+    # print("submit_button",submit_button)
+    # parameters={"Methods":methods, "Denoise": denoise}
+    # parameters.update(parameters1)
+    # print("----------parameters",parameters)
+        
 if not submit_button:
     st.stop()
+    
+print("============after submit parameters",parameters) 
 if not (len(input_df_pressure)>0 and len(input_df_rate)>0):
     st.warning("Please upload pressure & rate measurements")
     st.stop()

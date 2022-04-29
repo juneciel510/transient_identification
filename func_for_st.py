@@ -887,7 +887,7 @@ def upload_N_preview():
     return input_df_pressure, input_df_rate
 
 
-def user_input_parameters():
+def user_input_parameters(window_type:str, methods:str):
     # denoise_checkBox = st.checkbox(
     #         "Denoise",
     #         value=True,
@@ -907,42 +907,68 @@ def user_input_parameters():
     
     # c1, c2 = st.columns([0.01, 3, 0.07, 3, 0.07])
     c1, c2 = st.columns(2)
-    with c1:
-        rows_detailPlot= st.number_input(
-                    "The number of rows for a detail plot",
-                    value=12,
-                    min_value=1,
-                    max_value=300,
-                    step=1,
-                    help="""The whole datasets will be plotted in *rows_plot* rows.""",
-                )
-
-        point_halfWindow = st.number_input(
-                    "Point Window",
-                    value=10,
-                    min_value=5,
-                    max_value=100,
-                    help="""The number of points for observation at the left side or right side. Smaller number preferred when the distribution of the data points is very sparse.""",
-                )
-        
-        polynomial_order = st.number_input(
-                    "Polynomial Order",
-                    value=1,
-                    min_value=1,
-                    max_value=5,
-                    help="""Recommend using 1 for most cases. More minor transients will be detected with larger number.""",
-                )
-        
     with c2:
+          
+        if window_type=="Point Window":
+            point_halfWindow = st.number_input(
+                        "Point Window",
+                        value=10,
+                        min_value=5,
+                        max_value=100,
+                        step=2,
+                        help="""The number of points for observation for both left side and right side. Smaller number preferred when the distribution of the data points is very sparse.""",
+                    )
+            # time_halfWindow=None
+        if window_type=="Time Window":
+            time_halfWindow = st.number_input(
+                        "Time Window (hr)",
+                        value=0.1,
+                        min_value=0.0,
+                        max_value=10.0,
+                        step=0.1,
+                        help="""The time interval of points for observation for both left side and right side. Should be smaller than the shortest time interval of transient.""",
+                    )
+            # point_halfWindow=None
+            
+        if methods=="DeltaTangent":
+            polynomial_order = st.number_input(
+                        "Polynomial Order",
+                        value=1,
+                        min_value=1,
+                        max_value=5,
+                        help="""Recommend using 1 for most cases. More minor transients will be detected with larger number.""",
+                    )
+        
+        rows_detailPlot= st.number_input(
+            "The number of rows for a detail plot",
+            value=12,
+            min_value=1,
+            max_value=300,
+            step=1,
+            help="""The whole datasets will be plotted in *rows_plot* rows.""",
+        )
+    with c1:
     
-        deltaTangent_criterion = st.number_input(
-                    "Delta Tangent Threshold",
-                    value=20.0,
-                    min_value=1.0,
-                    max_value=1000.0,
-                    step=1.0,
-                    format="%.1f",
-                    help=""" *Delta Tangent*: Substraction of left tangent and right tangent for a certain point.""",
+        if methods=="DeltaTangent":
+            deltaTangent_criterion = st.number_input(
+                        "Delta Tangent Threshold",
+                        value=20.0,
+                        min_value=1.0,
+                        max_value=1000.0,
+                        step=1.0,
+                        format="%.1f",
+                        help=""" Increase the number if you want less points to be detected, vice versa.""",
+                    )
+            
+        if methods=="DeltaFOD":
+            deltaFOD_criterion = st.number_input(
+                    "DeltaFOD Threshold",
+                    value=0.10,
+                    min_value=0.00,
+                    max_value=1000.00,
+                    step=0.02,
+                    format="%.2f",
+                    help=""" Increase the number if you want less points to be detected, vice versa.""",
                 )
         
         minor_threshold_shutIn = st.number_input(
@@ -969,11 +995,17 @@ def user_input_parameters():
         # "denoise_checkBox":denoise_checkBox,
                 # "data_inOneRow":int(data_inOneRow),
                 "rows_detailPlot": int(rows_detailPlot),
-                "Point Window":int(point_halfWindow),
-                "Polynomial Order": int(polynomial_order),
-                "DeltaTangent Threshold":deltaTangent_criterion,
+                "Time Window": None if window_type!="Time Window" else time_halfWindow,
+                "Point Window":None if window_type!="Point Window" else int(point_halfWindow),
+                # "Point Window":int(point_halfWindow) if point_halfWindow is not None else None,
+                # "Point Window":None if methods!="DeltaTangent" or (window_type!="Point Window") else int(point_halfWindow),
+                # "Polynomial Order": int(polynomial_order) if polynomial_order is not None else None,
+                "Polynomial Order": None if methods!="DeltaTangent" or (polynomial_order is None) else int(polynomial_order),
+                "DeltaTangent Threshold":None if methods!="DeltaTangent" else deltaTangent_criterion,
+                "DeltaFOD Threshold": None if methods!="DeltaFOD" else deltaFOD_criterion,
                 "Minor Shut-in Threshold":minor_threshold_shutIn,
                 "Minor Flowing Threshold":minor_threshold_Flowing}
+    
     return  parameters
 
 def preprocess_data(input_df_pressure,input_df_rate,denoise):
@@ -996,7 +1028,7 @@ def coarse_filter(pressure_df,colum_names):
 def detect_using_deltaTangent(points, parameters,pressure_df,colum_names):
     pressure_measure=list(pressure_df[colum_names["pressure"]["measure"]])
     pressure_time=list(pressure_df[colum_names["pressure"]["time"]])
-    time_halfWindow=None
+    time_halfWindow=parameters["Time Window"]
     point_halfWindow=parameters["Point Window"]
     polynomial_order=parameters["Polynomial Order"]
     # tangent_type="single_point"
