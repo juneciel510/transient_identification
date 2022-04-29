@@ -33,6 +33,7 @@ from methods.base_classes import CurveParametersCalc
 from methods.tangent_method import TangentMethod
 # from advanced_method import detect_max_FOD
 from methods.derivative_method import DerivativeMethod
+from methods.patternRecognition_method import PatternRecognitionMethod
 
 
 colum_names   ={"pressure":{"time":"Elapsed time(hr)",
@@ -729,34 +730,34 @@ class PlotNSave:
         plt.show()
         return None
 
-def plot_histogram(data, xlabel:str, ylabel:str,title:str)->None:
-    number_bins=300
-    # plt.style.use('ggplot')
-    plt.hist(data, bins=number_bins)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    # plt.legend(legend)
-    plt.title(title)
-    plt.show
+# def plot_histogram(data, xlabel:str, ylabel:str,title:str)->None:
+#     number_bins=300
+#     # plt.style.use('ggplot')
+#     plt.hist(data, bins=number_bins)
+#     plt.xlabel(xlabel)
+#     plt.ylabel(ylabel)
+#     # plt.legend(legend)
+#     plt.title(title)
+#     plt.show
     
-def plot_nonDenoised_VS_Denoised(pressure_df:pd.DataFrame,
-                                 pressure_df_denoised:pd.DataFrame,
-                                 colum_names:Dict[str,Dict[str,str]]
-                                            ={"pressure":{"time":"Elapsed time",
-                                                            "measure":"Data",
-                                                            "first_order_derivative":"first_order_derivative",
-                                                            "second_order_derivative":"second_order_derivative"},
-                                                "rate":{"time":"Elapsed time","measure":"Liquid rate"}})->None:
-    """
-    line plot for both pressure measurements and denoised pressure measurements
-    """
-    fig=plt.figure(figsize=(9,4))
-    ax=fig.subplots()
-    p=ax.plot(pressure_df[colum_names["pressure"]["time"]],pressure_df[colum_names["pressure"]["measure"]],label='raw data')
-    p=ax.plot(pressure_df[colum_names["pressure"]["time"]],pressure_df_denoised[colum_names["pressure"]["measure"]],label='S-G filtered')
-    legend = ax.legend(loc='upper left', shadow=True, fontsize='x-large')
-    # legend.get_frame().set_facecolor('C0')
-    plt.show()
+# def plot_nonDenoised_VS_Denoised(pressure_df:pd.DataFrame,
+#                                  pressure_df_denoised:pd.DataFrame,
+#                                  colum_names:Dict[str,Dict[str,str]]
+#                                             ={"pressure":{"time":"Elapsed time",
+#                                                             "measure":"Data",
+#                                                             "first_order_derivative":"first_order_derivative",
+#                                                             "second_order_derivative":"second_order_derivative"},
+#                                                 "rate":{"time":"Elapsed time","measure":"Liquid rate"}})->None:
+#     """
+#     line plot for both pressure measurements and denoised pressure measurements
+#     """
+#     fig=plt.figure(figsize=(9,4))
+#     ax=fig.subplots()
+#     p=ax.plot(pressure_df[colum_names["pressure"]["time"]],pressure_df[colum_names["pressure"]["measure"]],label='raw data')
+#     p=ax.plot(pressure_df[colum_names["pressure"]["time"]],pressure_df_denoised[colum_names["pressure"]["measure"]],label='S-G filtered')
+#     legend = ax.legend(loc='upper left', shadow=True, fontsize='x-large')
+#     # legend.get_frame().set_facecolor('C0')
+#     plt.show()
     
     
 def download_button(object_to_download, download_filename, button_text):
@@ -888,24 +889,6 @@ def upload_N_preview():
 
 
 def user_input_parameters(window_type:str, methods:str):
-    # denoise_checkBox = st.checkbox(
-    #         "Denoise",
-    #         value=True,
-    #         help="Denoise the input pressure measurements",
-    #     )
-
-    # data_inOneRow= st.number_input(
-    #             "Data in One Row",
-    #             value=1200,
-    #             min_value=100,
-    #             max_value=3000,
-    #             step=100,
-    #             help="""Number of data points in every row in a detail plot.""",
-    #             # help="Minimum value for the keyphrase_ngram_range. keyphrase_ngram_range sets the length of the resulting keywords/keyphrases. To extract keyphrases, simply set keyphrase_ngram_range to (1, # 2) or higher depending on the number of words you would like in the resulting keyphrases.",
-    #         )
-    
-    
-    # c1, c2 = st.columns([0.01, 3, 0.07, 3, 0.07])
     c1, c2 = st.columns(2)
     with c2:
           
@@ -974,8 +957,8 @@ def user_input_parameters(window_type:str, methods:str):
         minor_threshold_shutIn = st.number_input(
                     "Minor Shut-in Threshold",
                     value=0.020,
-                    min_value=0.,
-                    max_value=10.,
+                    min_value=0.000,
+                    max_value=10.000,
                     step=0.001,
                     format="%.3f",
                     help="""The value to tune the threshold for removing minor *Shut-in Periods*. Set the value to be zero, if you want to keep all the transients that have been screened out.""",
@@ -984,8 +967,8 @@ def user_input_parameters(window_type:str, methods:str):
         minor_threshold_Flowing = st.number_input(
                     "Minor Flowing Threshold",
                     value=0.020,
-                    min_value=0.,
-                    max_value=10.,
+                    min_value=0.000,
+                    max_value=10.000,
                     step=0.001,
                     format="%.3f",
                     help="""The value to tune the threshold for removing minor transients in *Flowing Periods*. Set the value to be zero, if you want to keep all the transients that have been screened out.""",
@@ -1003,8 +986,8 @@ def user_input_parameters(window_type:str, methods:str):
                 "Polynomial Order": None if methods!="DeltaTangent" or (polynomial_order is None) else int(polynomial_order),
                 "DeltaTangent Threshold":None if methods!="DeltaTangent" else deltaTangent_criterion,
                 "DeltaFOD Threshold": None if methods!="DeltaFOD" else deltaFOD_criterion,
-                "Minor Shut-in Threshold":minor_threshold_shutIn,
-                "Minor Flowing Threshold":minor_threshold_Flowing}
+                "Minor Shut-in Threshold":round(minor_threshold_shutIn,3),
+                "Minor Flowing Threshold":round(minor_threshold_Flowing,3)}
     
     return  parameters
 
@@ -1016,7 +999,7 @@ def preprocess_data(input_df_pressure,input_df_rate,denoise):
         pressure_df=processed_data_denoised.pressure_df
         rate_df=processed_data_denoised.rate_df
         # pressure_df=pressure_df[0:12000]
-        pressure_df=pressure_df[0:3000]
+        # pressure_df=pressure_df[0:3000]
        
         return pressure_df,rate_df
 
@@ -1026,6 +1009,7 @@ def coarse_filter(pressure_df,colum_names):
     return points
 
 def detect_using_deltaTangent(points, parameters,pressure_df,colum_names):
+    print("detect_using_deltaTangent")
     pressure_measure=list(pressure_df[colum_names["pressure"]["measure"]])
     pressure_time=list(pressure_df[colum_names["pressure"]["time"]])
     time_halfWindow=parameters["Time Window"]
@@ -1036,6 +1020,46 @@ def detect_using_deltaTangent(points, parameters,pressure_df,colum_names):
     deltaTangent_criterion=parameters["DeltaTangent Threshold"]
     identify_useDeltaTangent=TangentMethod(time_halfWindow,point_halfWindow,tangent_type=tangent_type,polynomial_order=polynomial_order)
     buildup,drawdown=identify_useDeltaTangent.predict_useDeltaTangent(pressure_measure,pressure_time,points,deltaTangent_criterion)
+    return buildup,drawdown
+
+def detect_using_deltaFOD(points, parameters,pressure_df,colum_names):
+    print("detect_using_deltaFOD")
+    time_halfWindow=parameters["Time Window"]
+    point_halfWindow=parameters["Point Window"]
+    deltaDerivative_tuning=parameters["DeltaFOD Threshold"]
+    
+    detect_useDerivative=DerivativeMethod(pressure_df,colum_names)
+    buildup,drawdown=detect_useDerivative.detect_breakpoints_deltaAvgFOD(points,
+                                                                        deltaDerivative_tuning,
+                                                                        point_halfWindow,
+                                                                        time_halfWindow)
+    return buildup,drawdown
+
+PATTERN={'buildUp': {'left_top': [-282.04190, -365.27046, -140.62192, -0.04641], 
+                     'left_bottom': [121.5484 , 261.44881, 161.1871 ,   2.63124], 
+                     'right_top': [-158.13055, -118.03974,  643.9731 ,    5.02701], 
+                     'right_bottom': [ 52.98722, -52.74598,  29.84924,  -3.26558]}, 
+         'drawDown': {'left_top': [-173.51306, -367.95164, -327.75477,   21.78427], 
+                      'left_bottom': [31.1074 , 51.5165 , 48.30206,  1.16154], 
+                      'right_top': [ 16.7654 , -42.13596, -51.35547,   7.3767 ], 
+                      'right_bottom': [ -642.70349,  1439.94868, -1470.28745,   -16.4097 ]}}
+
+def detect_using_patternRecognition(points, parameters,pressure_df,colum_names):
+    print("detect_using_patternRecognition")
+    pressure_measure=list(pressure_df[colum_names["pressure"]["measure"]])
+    pressure_time=list(pressure_df[colum_names["pressure"]["time"]])
+    time_halfWindow=parameters["Time Window"]
+    point_halfWindow=parameters["Point Window"]
+    #use an already learned pattern
+    detect_usePR=PatternRecognitionMethod(percentile_tuning=None,fine_tuning=None)
+    detect_usePR.parameters_twoPatterns=PATTERN
+    fitting_type="polynomial"
+    buildup,drawdown=detect_usePR.predict(pressure_measure,
+                                        pressure_time,
+                                        points,
+                                        time_halfWindow,
+                                        point_halfWindow,
+                                        fitting_type)
     return buildup,drawdown
 
 def FFOD_filter(buildup,drawdown,pressure_df):

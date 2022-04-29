@@ -22,7 +22,7 @@ warnings.simplefilter('ignore', np.RankWarning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
 # sys.path.insert(1, '../util')
 # sys.path.insert(1, '../methods')
-from func_for_st import upload_N_preview,user_input_parameters,preprocess_data,coarse_filter,detect_using_deltaTangent,FFOD_filter,plot_task1_N_task2,MFOD_filter,LoadNPreprocessData, PlotNSave,download_button
+from func_for_st import upload_N_preview,user_input_parameters,preprocess_data,coarse_filter,detect_using_deltaTangent,detect_using_deltaFOD,detect_using_patternRecognition,FFOD_filter,plot_task1_N_task2,MFOD_filter,LoadNPreprocessData, PlotNSave,download_button
 
 
 
@@ -184,8 +184,26 @@ points=coarse_filter(pressure_df,colum_names)
 print("after coarse filter",len(points))
 # points=MFOD_filter(points,pressure_df)
 # print("after MFOD_filter",len(points))
-buildup,drawdown=detect_using_deltaTangent(points, parameters,pressure_df,colum_names)
+if methods=="DeltaTangent":
+    buildup,drawdown=detect_using_deltaTangent(points, 
+                                               parameters,
+                                               pressure_df,
+                                               colum_names)
+if methods=="DeltaFOD":
+    buildup,drawdown=detect_using_deltaFOD(points, 
+                                           parameters,
+                                           pressure_df,
+                                           colum_names)
+    
+if methods=="PatternRecognition":
+    buildup,drawdown=detect_using_patternRecognition(points, 
+                                                     parameters,
+                                                     pressure_df,
+                                                     colum_names)
 print("after detect_using_deltaTangent",len(buildup),len(drawdown))
+if len(buildup)==0 or len(drawdown)==0:
+    st.warning("No flowing periods or shutIn periods can be detected.")
+    st.stop()
 buildup,drawdown=FFOD_filter(buildup,drawdown,pressure_df)
 buildup=[int(point) for point in buildup]
 drawdown=[int(point) for point in drawdown]

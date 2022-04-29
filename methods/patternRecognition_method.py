@@ -14,7 +14,7 @@ from scipy.signal import savgol_filter
 import math 
 import bisect
 
-from plot import plot_histogram
+# from plot import plot_histogram
 from base_classes import CurveParametersCalc,SaveNLoad
 
 
@@ -51,17 +51,8 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
                 ):
         
         CurveParametersCalc.__init__(self)
-        
-        #to store the points for learn, classified as buildup & drawdown
-        
+    
         # self.breakpoints_forLearn_multipleLearn=[]
-        #to store the points predicted 
-        # self.detectedpoints=defaultdict(list)
-        # self.point_halfWindow=point_halfWindow
-        #time window for learn
-        # self.time_halfWindow_forLearn=time_halfWindow_forLearn
-        # #time window for predict
-        # self.time_halfWindow_forPredict=time_halfWindow_forPredict
         self.min_pointsNumber=min_pointsNumber
         self.percentile_tuning=percentile_tuning
         self.fine_tuning=fine_tuning
@@ -529,7 +520,7 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
             
         borderData=pd.DataFrame()
         # data_inWindow=self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,self.time_halfWindow_forPredict,self.min_pointsNumber)
-        fitting_type="polynomial"     
+        # fitting_type="polynomial"     
         # if time_halfWindow!=None and point_halfWindow!=None:
         #     print("if you want to use time window, please set 'point_halfWindow' to be None, vice versa")
         #     return None
@@ -555,8 +546,11 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
             curveData_singlePoint["pressure_time_right"].reverse()
             curveData_singlePoint["pressure_measure_right"].reverse()
         
-            y_borders_twoPattern=self.calculate_y_onBorders(curveData_singlePoint["pressure_time_left"],curveData_singlePoint["pressure_time_right"],fitting_type)
-            borderData=borderData.append(y_borders_twoPattern,ignore_index=True)
+            y_borders_twoPattern=self.calculate_y_onBorders(curveData_singlePoint["pressure_time_left"],
+                                                            curveData_singlePoint["pressure_time_right"],
+                                                            fitting_type)
+            borderData=borderData.append(y_borders_twoPattern,
+                                         ignore_index=True)
          
         self.data_forPredict=pd.concat([data_inWindow, borderData], axis=1)  
    
@@ -571,15 +565,7 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
         
         points_buildUp,points_drawDown=detectedpoints.values()
   
-        
-        # print(f"before filter, the length of buildup {len(points_buildUp)}, the length of drawdown {len(points_drawDown)}")
-        # points=points_buildUp+points_drawDown
-        # points_buildUp,points_drawDown=self.detect_breakpoint_type(pressure_measure,
-        #                                                            pressure_time,
-        #                                                            points,
-        #                                                            self.time_halfWindow_forPredict,
-        #                                                            self.min_pointsNumber)
-        print(f"after filter, the results are filtered further, there are {len(points_buildUp)} detected buildup points, {len(points_drawDown)} drawdown detected")
+        print(f"{len(points_buildUp)} buildup points detected, {len(points_drawDown)} drawdown points detected")
         return points_buildUp,points_drawDown
             
     

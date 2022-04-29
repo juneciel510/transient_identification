@@ -219,7 +219,7 @@ class DerivativeMethod(ExtractPoints_inWindow):
                              min_pointsNumber:int=8
                              )->(List[int],List[int]):
             
-        avg_derivative_inWindow=self.avg_derivative_inTimeWindow(self.first_order_derivative,
+        avg_derivative_inWindow=self.avg_derivative_inWindow(self.first_order_derivative,
                                                                 self.pressure_time,
                                                                 points,
                                                                 time_halfWindow,

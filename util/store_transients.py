@@ -9,8 +9,8 @@ methods_dir = (os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 + '/methods/')
 sys.path.append(methods_dir)
 from tangent_method import TangentMethod
-from base_classes import CurveParametersCalc
-from extract_points import ExtractPoints_inWindow
+# from base_classes import CurveParametersCalc
+# from extract_points import ExtractPoints_inWindow
 
 class StoreTransients(TangentMethod):
     def __init__(self, 
