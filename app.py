@@ -133,14 +133,8 @@ with st.expander("",expanded=True):
          
 
     with st.form(key="my_form"):   
-        print("---------window_type",window_type)
-        
-        # with st.expander("Adjust parameters",expanded=True):
-        #     st.markdown("##### Parameters")
-        
-        parameters1 = user_input_parameters(window_type, methods)
-            
-        
+        print("---------window_type",window_type)    
+        parameters1 = user_input_parameters(window_type, methods)     
             
         submit_button = st.form_submit_button(label="Submit")
         print("submit_button",submit_button)
@@ -148,22 +142,6 @@ with st.expander("",expanded=True):
         parameters.update(parameters1) 
         print("============parameters",parameters)   
        
-        
-    # with st.expander("Select Method",expanded=True):
-        
-    #     print("---------window_type",window_type)
-        
-    #     # with st.expander("Adjust parameters",expanded=True):
-    #     #     st.markdown("##### Parameters")
-    #     parameters1 = user_input_parameters(window_type)
-            
-        
-            
-    # submit_button = st.button("Submit")
-    # print("submit_button",submit_button)
-    # parameters={"Methods":methods, "Denoise": denoise}
-    # parameters.update(parameters1)
-    # print("----------parameters",parameters)
         
 if not submit_button:
     st.stop()

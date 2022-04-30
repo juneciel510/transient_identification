@@ -469,10 +469,7 @@ class PlotNSave:
         # scatter_colors=['blue','green','black','limegreen']
         scatter_colors=['red','green','orangered','limegreen']
         scatter_sizes=[4**2,6**2,5**2,5**2]   
-        # y_labels=[self.colum_names["pressure"]["measure"],
-        #           self.colum_names["rate"]["measure"],
-        #           self.colum_names["pressure"]["first_order_derivative"],
-        #           self.colum_names["pressure"]["second_order_derivative"]]
+        
         y_labels=["Pressure (psia)",
                   "Liquid rate (STB/D)",
                   "First_order_derivative",
@@ -730,34 +727,6 @@ class PlotNSave:
         plt.show()
         return None
 
-# def plot_histogram(data, xlabel:str, ylabel:str,title:str)->None:
-#     number_bins=300
-#     # plt.style.use('ggplot')
-#     plt.hist(data, bins=number_bins)
-#     plt.xlabel(xlabel)
-#     plt.ylabel(ylabel)
-#     # plt.legend(legend)
-#     plt.title(title)
-#     plt.show
-    
-# def plot_nonDenoised_VS_Denoised(pressure_df:pd.DataFrame,
-#                                  pressure_df_denoised:pd.DataFrame,
-#                                  colum_names:Dict[str,Dict[str,str]]
-#                                             ={"pressure":{"time":"Elapsed time",
-#                                                             "measure":"Data",
-#                                                             "first_order_derivative":"first_order_derivative",
-#                                                             "second_order_derivative":"second_order_derivative"},
-#                                                 "rate":{"time":"Elapsed time","measure":"Liquid rate"}})->None:
-#     """
-#     line plot for both pressure measurements and denoised pressure measurements
-#     """
-#     fig=plt.figure(figsize=(9,4))
-#     ax=fig.subplots()
-#     p=ax.plot(pressure_df[colum_names["pressure"]["time"]],pressure_df[colum_names["pressure"]["measure"]],label='raw data')
-#     p=ax.plot(pressure_df[colum_names["pressure"]["time"]],pressure_df_denoised[colum_names["pressure"]["measure"]],label='S-G filtered')
-#     legend = ax.legend(loc='upper left', shadow=True, fontsize='x-large')
-#     # legend.get_frame().set_facecolor('C0')
-#     plt.show()
     
     
 def download_button(object_to_download, download_filename, button_text):
@@ -975,14 +944,9 @@ def user_input_parameters(window_type:str, methods:str):
                 )
     
     parameters={
-        # "denoise_checkBox":denoise_checkBox,
-                # "data_inOneRow":int(data_inOneRow),
                 "rows_detailPlot": int(rows_detailPlot),
                 "Time Window": None if window_type!="Time Window" else time_halfWindow,
                 "Point Window":None if window_type!="Point Window" else int(point_halfWindow),
-                # "Point Window":int(point_halfWindow) if point_halfWindow is not None else None,
-                # "Point Window":None if methods!="DeltaTangent" or (window_type!="Point Window") else int(point_halfWindow),
-                # "Polynomial Order": int(polynomial_order) if polynomial_order is not None else None,
                 "Polynomial Order": None if methods!="DeltaTangent" or (polynomial_order is None) else int(polynomial_order),
                 "DeltaTangent Threshold":None if methods!="DeltaTangent" else deltaTangent_criterion,
                 "DeltaFOD Threshold": None if methods!="DeltaFOD" else deltaFOD_criterion,
@@ -998,7 +962,6 @@ def preprocess_data(input_df_pressure,input_df_rate,denoise):
                  use_SG_smoothing=(denoise=="Yes"))
         pressure_df=processed_data_denoised.pressure_df
         rate_df=processed_data_denoised.rate_df
-        # pressure_df=pressure_df[0:12000]
         # pressure_df=pressure_df[0:3000]
        
         return pressure_df,rate_df
@@ -1015,7 +978,6 @@ def detect_using_deltaTangent(points, parameters,pressure_df,colum_names):
     time_halfWindow=parameters["Time Window"]
     point_halfWindow=parameters["Point Window"]
     polynomial_order=parameters["Polynomial Order"]
-    # tangent_type="single_point"
     tangent_type="average"
     deltaTangent_criterion=parameters["DeltaTangent Threshold"]
     identify_useDeltaTangent=TangentMethod(time_halfWindow,point_halfWindow,tangent_type=tangent_type,polynomial_order=polynomial_order)
@@ -1095,8 +1057,7 @@ def plot_task1_N_task2(colum_names,parameters,buildup,drawdown,pressure_df,rate_
     for flowingTransient_object in flowingTransient_objects:
         all_flowing.append({"Flowing Period":flowingTransient_object.flowing_period,
                             "Breakpoints in Flowing Period":flowingTransient_object.points_inFlowTransient})
-        # all_flowing.append([flowingTransient_object.flowing_period,
-        #                     flowingTransient_object.points_inFlowTransient])
+   
 
     output=parameters.copy()
     del output["rows_detailPlot"]
@@ -1116,10 +1077,7 @@ def plot_task1_N_task2(colum_names,parameters,buildup,drawdown,pressure_df,rate_
     
     
     st.markdown("##### 1. Parameters & Detected results")
-    # cs, c1, c2, c3, cLast = st.columns([2, 1.5, 1.5, 1.5, 2])
     c1, c2, c3 = st.columns(3)
-    # c1, c2 = st.columns(2)
-
     with c1:
         CSVButton2 = download_button(output_df, "Data.csv", "📥 Download (.csv)")
     with c2:

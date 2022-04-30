@@ -53,6 +53,8 @@ class ExtractPoints_inWindow:
             'pressure_measure_right']
             -------------
         """
+        yCoordinate=list(yCoordinate)
+        xCoordinate=list(xCoordinate)
         if point_index-halfWinow_left<0 or point_index+halfWinow_right>=len(yCoordinate):
             return None
         
@@ -61,8 +63,8 @@ class ExtractPoints_inWindow:
         #left side
         sub_measure_left=yCoordinate[point_index+1-halfWinow_left:point_index+1]
         sub_time_left=xCoordinate[point_index+1-halfWinow_left:point_index+1]
-        curve_measure_left=[round(measure-sub_measure_left[-1],6) for measure in sub_measure_left]
-        curve_time_left=[round(time-sub_time_left[-1],6) for time in sub_time_left]
+        curve_measure_left=[round(measure-sub_measure_left[len(sub_measure_left)-1],6) for measure in sub_measure_left]
+        curve_time_left=[round(time-sub_time_left[len(sub_time_left)-1],6) for time in sub_time_left]
         
         #right side
         sub_measure_right=yCoordinate[point_index:point_index+halfWinow_right]
