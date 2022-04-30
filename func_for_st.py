@@ -841,7 +841,7 @@ def upload_N_preview():
             else:
                 st.info(
                 f"""
-                    👉 Check file format: [sample_pressure.txt](https://drive.google.com/uc?id=1NRChCr_7Nw-tbPat1evQq-DJ5ndrHpiI&export=download)
+                    👉 Check: [sample_pressure.txt](https://drive.google.com/uc?id=1NRChCr_7Nw-tbPat1evQq-DJ5ndrHpiI&export=download)
                     """
                 )
 
@@ -860,7 +860,7 @@ def upload_N_preview():
             else:
                 st.info(
                 f"""
-                    👉 Check file format: [sample_rate.txt](https://drive.google.com/uc?id=1RC93dlxTdCo-Vj58xTtfPqwIzkgDpeEQ&export=download)
+                    👉 Check: [sample_rate.txt](https://drive.google.com/uc?id=1RC93dlxTdCo-Vj58xTtfPqwIzkgDpeEQ&export=download)
                     """
                 )
                 
