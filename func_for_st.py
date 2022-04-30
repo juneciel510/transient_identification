@@ -828,6 +828,8 @@ def upload_N_preview():
         with c1:
             st.markdown("##### Pressure Data")
             uploaded_file_pressure = st.file_uploader("Upload your pressure file", type=["txt"]) 
+            
+            # st.markdown("##### 👉 Check the sample file")
             if uploaded_file_pressure is not None:
                 input_df_pressure = pd.read_csv(uploaded_file_pressure, 
                                             delimiter=" ",
@@ -835,12 +837,18 @@ def upload_N_preview():
                                             names=[colum_names["pressure"]["time"], 
                                                     colum_names["pressure"]["measure"]],
                                             skipinitialspace = True)   
-            if uploaded_file_pressure!=None:
                 st.dataframe(input_df_pressure.head()) 
+            else:
+                st.info(
+                f"""
+                    👉 Check file format: [sample_pressure.txt](https://drive.google.com/uc?id=1NRChCr_7Nw-tbPat1evQq-DJ5ndrHpiI&export=download)
+                    """
+                )
 
         with c2:
             st.markdown("##### Flow Rate Data")
             uploaded_file_rate = st.file_uploader("Upload your rate file", type=["txt"])
+            
             if uploaded_file_rate is not None:
                 input_df_rate = pd.read_csv(uploaded_file_rate, 
                                             delimiter=" ",
@@ -848,11 +856,14 @@ def upload_N_preview():
                                             names=[colum_names["rate"]["time"], 
                                                     colum_names["rate"]["measure"]], 
                                             skipinitialspace = True)   
-        
-    
-        
-            if uploaded_file_rate!=None:
                 st.dataframe(input_df_rate.head())
+            else:
+                st.info(
+                f"""
+                    👉 Check file format: [sample_rate.txt](https://drive.google.com/uc?id=1RC93dlxTdCo-Vj58xTtfPqwIzkgDpeEQ&export=download)
+                    """
+                )
+                
         
     return input_df_pressure, input_df_rate
 
