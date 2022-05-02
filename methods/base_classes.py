@@ -41,7 +41,6 @@ class CurveParametersCalc(ExtractPoints_inWindow):
     Returns:
     """
     def __init__(self,mode:str="forPatternRecognition"):
-        # self.buildUp_or_drawDown=""
         ExtractPoints_inWindow.__init__(self,
                                      coordinate_names=["pressure_time","pressure_measure"],
                                      mode=mode)
@@ -100,31 +99,11 @@ class CurveParametersCalc(ExtractPoints_inWindow):
         """
         fitting_func=self.choose_fittingFunction(fitting_type)
         y_fit=fitting_func(np.asarray(x), *parameters)
-        # if fitting_type=="linear":
-        #     plt.figure(figsize = (10, 10))
-        #     plt.axis([-1, 1, -10, 10])
-        # plt.plot(x, y,color=plot_color,  marker='o')
         
-        #when detect_breakpoint_type invoke this funtion,
-        # set the title to be the breakpoint index
-        # if self.buildUp_or_drawDown!="":
-        #     if fitting_type=="linear":
-        #         plot_title=f"{self.ground_truth[i]}"      
-        #     if fitting_type=="polynomial" or fitting_type=="log":
-        #         plot_title=f"{self.buildUp_or_drawDown}---{self.ground_truth[i]}"   
-        # self.plot_fittingCurve(x, y,fitting_type, plot_color, plot_title, *parameters)
-        
-        # print("parameters",parameters)
-        # plt.scatter(x=x,y=y,color=plot_color)
+        # plt.ylim(-400, 200)
         plt.scatter(x=x,y=y,label="data point",color="green")
         plt.plot(x, y_fit, label="fitted curve",color=plot_color,linestyle='-')
         plt.title("")
-        # if self.buildUp_or_drawDown!="":
-        #     plt.scatter(x=x,y=y,color=plot_color)
-        #     plt.plot(x, y_fit, color=plot_color,linestyle='-')
-        #     plt.title(self.buildUp_or_drawDown)
-        # if fitting_type=="log" or fitting_type=="polynomial":
-        #     plt.show()
     
     def calculate_Parameters_allCurve(self,
                                       data_inWindow:pd.DataFrame,
@@ -212,7 +191,6 @@ class CurveParametersCalc(ExtractPoints_inWindow):
         allPoints=[ground_truth_buildUp,ground_truth_drawDown]
 
         for points,buildUp_or_drawDown in zip(allPoints, self.pattern_names):
-            # self.buildUp_or_drawDown=buildUp_or_drawDown
             data_inWindow=self.extract_points_inWindow(pressure_measure,
                                                            pressure_time,
                                                            points,
@@ -246,7 +224,6 @@ class CurveParametersCalc(ExtractPoints_inWindow):
         """
         print("=======================")
         print("detect breakpoint type.....")
-        # self.buildUp_or_drawDown=""
         data_inWindow=self.extract_points_inWindow(pressure_measure,pressure_time,points,time_halfWindow,point_halfWindow,min_pointsNumber)
         parameters_allCurves=self.calculate_Parameters_allCurve(data_inWindow,fitting_type="linear",show_plot=False)  
 

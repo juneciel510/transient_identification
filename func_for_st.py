@@ -822,7 +822,7 @@ def upload_N_preview():
     input_df_pressure=pd.DataFrame()
     input_df_rate=pd.DataFrame()
     st.markdown("### ✨ Upload & Preview ")
-    with st.expander(""" *The time field of data must be float (hr) or timestamp (01/01/2019  00:00:22).""",expanded=True):
+    with st.expander(""" *The uploaded file must use the same format as the provided sample file.""",expanded=True):
         # ce, c1, ce, c2, ce = st.columns([0.01, 3, 0.07, 3, 0.07])
         c1, c2 = st.columns(2)
         with c1:
@@ -1070,11 +1070,13 @@ def plot_task1_N_task2(colum_names,parameters,buildup,drawdown,pressure_df,rate_
                             "Breakpoints in Flowing Period":flowingTransient_object.points_inFlowTransient})
    
 
-    output=parameters.copy()
+    # output=parameters.copy()
+    output={key:value for key,value in parameters.items() if value is not None}
     del output["rows_detailPlot"]
-    output.update({"Number of Shut-in":len(transients.major_drawDown),
-                            "Number of All Build-up":len(transients.allPointsStored["buildUp"]), 
-                            "Number of All Draw-down":len(transients.allPointsStored["drawDown"]), 
+    output.update({"Number of Shut-in":len(transients.shutInperiods),
+                   "Number of Flowing":len(transients.flowingPeriods),
+                            "Number of All Build-up Points":len(transients.allPointsStored["buildUp"]), 
+                            "Number of All Draw-down Points":len(transients.allPointsStored["drawDown"]), 
                             "Shut-in Periods":transients.shutInperiods,
                             "Flowing Period & Breakpoints in Flowing":all_flowing})
     

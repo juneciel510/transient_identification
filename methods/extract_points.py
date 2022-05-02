@@ -63,28 +63,30 @@ class ExtractPoints_inWindow:
         #left side
         sub_measure_left=yCoordinate[point_index+1-halfWinow_left:point_index+1]
         sub_time_left=xCoordinate[point_index+1-halfWinow_left:point_index+1]
-        curve_measure_left=[round(measure-sub_measure_left[len(sub_measure_left)-1],6) for measure in sub_measure_left]
-        curve_time_left=[round(time-sub_time_left[len(sub_time_left)-1],6) for time in sub_time_left]
+        
         
         #right side
         sub_measure_right=yCoordinate[point_index:point_index+halfWinow_right]
         sub_time_right=xCoordinate[point_index:point_index+halfWinow_right]
-        curve_measure_right=[round(measure-sub_measure_right[0],6) for measure in sub_measure_right]
-        curve_time_right=[round(time-sub_time_right[0],6) for time in sub_time_right]
+        
         
         
         names=["left","right"]
         sub_measures=[sub_measure_left,sub_measure_right]
         sub_times=[sub_time_left,sub_time_right]
-        curve_measures=[curve_measure_left,curve_measure_right]
-        curve_times=[curve_time_left,curve_time_right]
+       
         
-        
-        
-        for name,sub_measure, sub_time, curve_measure,curve_time in zip(names,sub_measures, sub_times,curve_measures,curve_times):
+        for name,sub_measure, sub_time in zip(names,sub_measures, sub_times):
             sub_measure = list(np.around(np.array(sub_measure),6))
             sub_time = list(np.around(np.array(sub_time),6))
             if self.mode=="forPatternRecognition":
+                if name=="left":
+                    curve_measure=[round(measure-sub_measure_left[len(sub_measure_left)-1],6) for measure in sub_measure_left]
+                    curve_time=[round(time-sub_time_left[len(sub_time_left)-1],6) for time in sub_time_left]
+                if name=="right":
+                    curve_measure=[round(measure-sub_measure_right[0],6) for measure in sub_measure_right]
+                    curve_time=[round(time-sub_time_right[0],6) for time in sub_time_right]
+                
                 data.update({f"{self.coordinate_names[0]}_{name}":curve_time,
                                 f"{self.coordinate_names[1]}_{name}":curve_measure})
             elif self.mode=="extractOriginData":
