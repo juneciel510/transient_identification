@@ -233,7 +233,6 @@ class StoreTransients(TangentMethod):
         self.flowingTransient_objects=self.find_breakPoints_inFlowingPeriods(flowingPeriods,minor_threshold_Flowing)
         
     def get_allPointsStored(self)->Dict[str,List[int]]:
-        #copy list
         points_buildUp=self.major_buildUp.copy()
         for flowingTransient_object  in self.flowingTransient_objects:
             points_buildUp+=flowingTransient_object.points_inFlowTransient
