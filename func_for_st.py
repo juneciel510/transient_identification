@@ -832,7 +832,7 @@ def upload_N_preview():
             # st.markdown("##### 👉 Check the sample file")
             if uploaded_file_pressure is not None:
                 input_df_pressure = pd.read_csv(uploaded_file_pressure, 
-                                            delimiter=" ",
+                                            delimiter='[ ]+|\t',
                                             skiprows=2, 
                                             names=[colum_names["pressure"]["time"], 
                                                     colum_names["pressure"]["measure"]],
@@ -851,7 +851,7 @@ def upload_N_preview():
             
             if uploaded_file_rate is not None:
                 input_df_rate = pd.read_csv(uploaded_file_rate, 
-                                            delimiter=" ",
+                                            delimiter='[ ]+|\t',
                                             skiprows=2, 
                                             names=[colum_names["rate"]["time"], 
                                                     colum_names["rate"]["measure"]], 

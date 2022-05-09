@@ -221,7 +221,7 @@ class ExtractPoints_inWindow:
             
             if data is not None:
                 data_inWindow=data_inWindow.append(data,ignore_index=True)
-        print("--------data_inWindow:",data_inWindow)
+        # print("--------data_inWindow:",data_inWindow)
         return data_inWindow
             
 

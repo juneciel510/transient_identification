@@ -20,8 +20,6 @@ import os
 import sys
 warnings.simplefilter('ignore', np.RankWarning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
-# sys.path.insert(1, '../util')
-# sys.path.insert(1, '../methods')
 from func_for_st import upload_N_preview,user_input_parameters,preprocess_data,coarse_filter,detect_using_deltaTangent,detect_using_deltaFOD,detect_using_patternRecognition,FFOD_filter,plot_task1_N_task2,MFOD_filter,LoadNPreprocessData, PlotNSave,download_button
 
 
@@ -180,7 +178,7 @@ if methods=="PatternRecognition":
                                                      parameters,
                                                      pressure_df,
                                                      colum_names)
-print("after detect_using_deltaTangent",len(buildup),len(drawdown))
+print("after method",len(buildup),len(drawdown))
 if len(buildup)==0 or len(drawdown)==0:
     st.warning("No flowing periods or shutIn periods can be detected.")
     st.stop()
