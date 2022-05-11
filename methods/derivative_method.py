@@ -51,8 +51,6 @@ class DerivativeMethod(ExtractPoints_inWindow):
         sub_pressure_dfs=[self.pressure_df.loc[(self.pressure_time >= i*time_step) & (self.pressure_time  <= (i+1)*time_step)] for i in range(group_number)]
         #get the index of max absolute value of first order derivative
         index_max_FOD=[sub_pressure_df["abs(first_order_derivative)"].idxmax() for sub_pressure_df in sub_pressure_dfs if len(sub_pressure_df)>0]
-        
-        # filtered_points=[point_index for point_index in index_max_FOD if self.first_order_derivative[point_index]>0.02*self.std_1 ]
         return index_max_FOD
     
     def detect_first_FOD(self,
@@ -67,11 +65,9 @@ class DerivativeMethod(ExtractPoints_inWindow):
         group_number=math.ceil(max_time/time_step)
         #devide the pressure_df into multiple sub df according to time step
         sub_pressure_dfs=[self.pressure_df.loc[(self.pressure_time >= i*time_step) & (self.pressure_time  <= (i+1)*time_step)] for i in range(group_number)]
-        #get the index of max absolute value of first order derivative
-        # index_max_FOD=[sub_pressure_df["abs(first_order_derivative)"].idxmax() for sub_pressure_df in sub_pressure_dfs if len(sub_pressure_df)>0]
         
+        #get the index of max absolute value of first order derivative
         index_first_FOD=[sub_pressure_df.index[0] for sub_pressure_df in sub_pressure_dfs if len(sub_pressure_df)>0]
-        # filtered_points=[point_index for point_index in index_max_FOD if self.first_order_derivative[point_index]>0.02*self.std_1 ]
         return index_first_FOD
 
     def FOD_above_threshold(self, points,noise_threshold):
@@ -130,7 +126,6 @@ class DerivativeMethod(ExtractPoints_inWindow):
                                 'avg_derivative_left',
                                 'avg_derivative_right'])
         
-        # points_valid=[point for point in points if point-point_halfWindow>=0 and point+point_halfWindow<len(derivative_lst) ]
         for point_index in points: 
             data=self.extract_singlePoint_inWindow(derivative_lst,
                                                         pressure_time,

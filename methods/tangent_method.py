@@ -154,8 +154,7 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
                 plot_step=max([abs(item) for item in x])/(len(x)*2)
                 x_tangent=[x[i]-plot_step,x[i]+plot_step]
                 # print(f"tangent[{i}]:{tangent[i]}")
-                y_tangent=self.tangentLine_func(np.asarray(x_tangent),tangent[i],x[i],y[i])
-                # y_tangent=[6 if y>6 else (-6 if y<-6 else y) for y in y_tangent]      
+                y_tangent=self.tangentLine_func(np.asarray(x_tangent),tangent[i],x[i],y[i]) 
                 plt.plot(x_tangent, y_tangent, label=label,color=tangentLine_color,linestyle='-')
         
         
@@ -164,13 +163,10 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
         'weight': 'normal',
         'size': 15,
         }
-        # plt.ylim((min(data_plotPoint["pressure_measure_left"].values[0])-1,max(data_plotPoint["pressure_measure_right"].values[0])+1))
+       
         all_pressure=data_plotPoint["pressure_measure_left"].values[0]+data_plotPoint["pressure_measure_right"].values[0]
         plt.ylim((min(all_pressure)-1,max(all_pressure)+1))
-        # xloc=-0.5*plt.margins()[0]+min(data_plotPoint["pressure_time_left"].values[0])
-        # xloc=-plt.margins()[0]+min(data_plotPoint["pressure_time_left"].values[0])+0.1*(max(data_plotPoint["pressure_time_right"].values[0])-min(data_plotPoint["pressure_time_left"].values[0]))
         xloc=min(data_plotPoint["pressure_time_left"].values[0])
-        # xloc=plt.margins()[0]+min(data_plotPoint["pressure_time_left"].values[0])-0.1*(max(data_plotPoint["pressure_time_right"].values[0])-min(data_plotPoint["pressure_time_left"].values[0]))
         yloc=1+min(data_plotPoint["pressure_measure_left"].values[0])+0.9*(max(data_plotPoint["pressure_measure_right"].values[0])-min(data_plotPoint["pressure_measure_left"].values[0]))
         plt.text(xloc,yloc,s=f"polynomial_order:{self.polynomial_order}",fontdict=font)
         plt.annotate(f'point index: {point_index}', xy=(0,0),  xytext=(0.038, -0.7), 
@@ -187,7 +183,6 @@ class TangentMethod(CurveParametersCalc,SaveNLoad):
         by_label = dict(zip(labels, handles))
         figure.legend(by_label.values(), by_label.keys(),
                       loc='center right',
-                    #   loc='lower right',
                       shadow=True, fontsize='large')
                       
     

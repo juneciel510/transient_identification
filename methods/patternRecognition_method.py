@@ -69,13 +69,6 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
                                                     "buildUp",
                                                     "drawDown"])
 
-        
-#         self.parameters_allCurves_groundTruth={"buildUp":pd.DataFrame(columns=["point_index",
-#                                                                                "left_curves_parameters",
-#                                                                                "right_curves_parameters"]), 
-#                                                "drawDown":pd.DataFrame(columns=["point_index",
-#                                                                                 "left_curves_parameters",
-#                                                                                 "right_curves_parameters"])}
 
         #to store patterns for buildup or drawdown
         self.parameters_twoPatterns={"buildUp":{"left_top":[],
@@ -274,8 +267,7 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
         
         parameters_twoPatterns={}
         
-        for pattern_name in self.pattern_names:  
-#             self.buildUp_or_drawDown=pattern_name     
+        for pattern_name in self.pattern_names:    
             parameters_pattern=self.get_borders_onePattern(time_halfWindow_forLearn,
                                                                  fitting_type,
                                                                 parameters_allCurves_groundTruth,
@@ -508,8 +500,7 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
         """     
         print("==================")
         print("start to predict using pattern...")
-        # self.std_2=statistics.stdev(second_order_derivative)
-#         self.buildUp_or_drawDown=""
+
         self.data_forPredict=pd.DataFrame(columns=["point_index",
                                                    "pressure_time_left",
                                                     "pressure_measure_left",
@@ -519,21 +510,6 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
                                                     "drawDown"])
             
         borderData=pd.DataFrame()
-        # data_inWindow=self.extract_points_inTimeWindow(pressure_measure,pressure_time,points,self.time_halfWindow_forPredict,self.min_pointsNumber)
-        # fitting_type="polynomial"     
-        # if time_halfWindow!=None and point_halfWindow!=None:
-        #     print("if you want to use time window, please set 'point_halfWindow' to be None, vice versa")
-        #     return None
-        # if time_halfWindow!=None:
-        #     data_inWindow=self.extract_points_inTimeWindow(pressure_measure,
-        #                                 pressure_time,
-        #                                 points,
-        #                                 time_halfWindow)
-        # if point_halfWindow!=None:
-        #     data_inWindow=self.extract_points_inPointWindow(pressure_measure,
-        #                                                     pressure_time,
-        #                                                     points,
-        #                                                     point_halfWindow)
         data_inWindow=self.extract_points_inWindow(pressure_measure,
                                                             pressure_time,
                                                             points,

@@ -12,26 +12,11 @@ import base64
 import uuid,re
 from scipy.signal import savgol_filter
 import sys, os.path
-# sys.path.insert(1, '../util')
-# sys.path.insert(1, '../methods')
 
-# util_dir = (os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-# + '/util/')
-
-# sys.path.append(util_dir)
-# from source_code.util.util import SelectRows
 from util.util import SelectRows
 from util.store_transients import StoreTransients
-# from plot import PlotNSave
-# from plot2 import PlotNSave, plot_histogram
-# from data_load_N_preprocess import LoadNPreprocessData
-# methods_dir = (os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-# + '/methods/')
-# sys.path.append(methods_dir)
 from methods.base_classes import CurveParametersCalc
-# from patternRecognition_method import PatternRecognitionMethod
 from methods.tangent_method import TangentMethod
-# from advanced_method import detect_max_FOD
 from methods.derivative_method import DerivativeMethod
 from methods.patternRecognition_method import PatternRecognitionMethod
 
@@ -43,6 +28,7 @@ colum_names   ={"pressure":{"time":"Elapsed time(hr)",
                 "rate":{"time":"Elapsed time(hr)",
                         "measure":"Liquid rate(STB/D)"}}
 
+# adjust LoadNPreprocessData class to the app.py
 class LoadNPreprocessData:
     def __init__(self,
                  pressure_df:pd.DataFrame=pd.DataFrame(), 
@@ -59,8 +45,7 @@ class LoadNPreprocessData:
                  use_SG_smoothing:bool=True,
                  window_length:int=199,
                  polyorder:int=3)->None:
-        # self.pressure_filePath=pressure_filePath
-        # self.rate_filePath=rate_filePath
+     
         self.colum_names=colum_names
         self.skip_rows=skip_rows
         self.sheet_name=sheet_name
@@ -88,25 +73,7 @@ class LoadNPreprocessData:
         load data from 'txt' or 'xlsx' files
         convert time to hours in float if it is "timestamp" format
         '''
-        #check if file is txt or xlsx
-        # if self.pressure_filePath.split(".")[-1]=="txt" and self.rate_filePath.split(".")[-1]=="txt":
-        #     self.pressure_df = pd.read_csv(self.pressure_filePath, 
-        #                           delimiter=" ",
-        #                           skiprows=self.skip_rows, 
-        #                           names=[self.colum_names["pressure"]["time"], 
-        #                                  self.colum_names["pressure"]["measure"]],
-        #                           skipinitialspace = True) 
-        #     self.rate_df = pd.read_csv(self.rate_filePath, 
-        #                         delimiter=" ",
-        #                         skiprows=self.skip_rows, 
-        #                         names=[self.colum_names["rate"]["time"], 
-        #                                 self.colum_names["rate"]["measure"]], 
-        #                         skipinitialspace = True) 
-        # elif self.pressure_filePath.split(".")[-1]=="xlsx" and self.rate_filePath.split(".")[-1]=="xlsx":
-        #     self.pressure_df = pd.DataFrame(pd.read_excel(self.pressure_filePath, sheet_name=self.sheet_name["pressure"]))
-        #     self.rate_df = pd.DataFrame(pd.read_excel(self.rate_filePath, sheet_name=self.sheet_name["rate"]))
-        # else:
-        #     print("only can load data from 'txt' or 'xlsx' files")
+   
         
         #if time is timestamp, convert to float representing hours
         pressure_time_type= type(self.pressure_df[self.colum_names["pressure"]["time"]][0])  
@@ -126,19 +93,6 @@ class LoadNPreprocessData:
             print("check the time type")
         return None
     
-        # if len(self.pressure_df)>0:
-        #     pressure_time_type= type(self.pressure_df[self.colum_names["pressure"]["time"]][0]) 
-        #     if pressure_time_type is float:
-        #         pass
-        #     elif pressure_time_type is pd.Timestamp:
-        #         timestamps=self.pressure_df[self.colum_names["pressure"]["time"]]
-        #         start_timestamp=timestamps[0]
-        #         self.pressure_df[self.colum_names["pressure"]["time"]]=self.convert_timestamp2hour(timestamps,start_timestamp)
-        #     else:
-        #         raise TypeError("Only float and timestamp are allowed for the time field")
-
-                    
-            
 
     
     def concatenate_pressureNRate(self):
@@ -267,14 +221,12 @@ class PlotNSave:
             
         c1, c2 = st.columns(2)
         with c1:
-        # st.markdown("- ######  Overview Plot")
             self.plot_4_metrics(self.pressure_df,
                                     self.rate_df,
                                     self.points_detected,
                                     self.ground_truth, 
                                     self.plot_whole,
                                     filename_toSave_whole!="")
-        # st.markdown("- ###### Zoom-in Plot")
         with c2:
             self.plot_4_metrics_details(self.plot_details)
     
@@ -498,8 +450,7 @@ class PlotNSave:
         fig.suptitle(f'{self.plot_name}--Row {len(self.plots_toSave)}', 
             **{'family': 'Arial Black', 'size': 22, 'weight': 'bold'},x=0.5, y=0.98)
  
-            # plt.show()       
-        # print("plot_save",plot_save)
+
         if plot_save:
             print("save whole....")
             pdf = FPDF('P', 'in', (30, 19))
@@ -510,67 +461,12 @@ class PlotNSave:
                 pdf.image(tmpfile.name)
             print("pdf",pdf)
     
-            # pp = PdfPages(self.filename_toSave_whole)
-            # # for fig in self.plots_toSave:
-            # fig.savefig(pp, format='pdf')
             html = self.create_download_link(pdf.output(dest="S").encode("latin-1"), self.filename_toSave_whole,"📥 Overview Plot(.pdf)")
-            # # print("html",html)
             st.markdown(html, unsafe_allow_html=True)
-            # st.header("")
-            
-            # with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
-            #     print("tmpfile.name",tmpfile.name)
-            #     with open(tmpfile.name, "rb") as file:
-            #         st.download_button(
-            #                 label="Download image",
-            #                 data=file,
-            #                 file_name="flower.png",
-            #                 mime="image/png"
-                        # )
-        # if plot_show:
-            # st.pyplot(fig)
-            
-            # pp = PdfPages(self.filename_toSave_whole)
-            # fig.savefig(pp, format='pdf')
-            # pp.close()
-            # with open(self.filename_toSave_whole, "rb") as pdf_file:
-            #     PDFbyte = pdf_file.read()
-
-            # st.download_button(label="Export_Report",
-            #                     data=PDFbyte,
-            #                     file_name=self.filename_toSave_whole,
-            #                     mime='application/octet-stream')
-            # with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
-            #     print("tmpfile.name",tmpfile.name)
-            # st.image(tmpfile.name)
-    
-            # result = Image.fromarray(cropped_image.astype('uint8'), 'RGB')
-                
-            # img = Image.open(result)            
-
-            # btn = st.download_button(
-            #     label="Download image",
-            #     data=img,
-            #     file_name="imagename.png",
-            #     mime="image/png")
             
         plt.close(fig)
         return None
   
-        
-#     def add_page(self,txt):
-#         last_page = plt.figure(figsize=(20,13))
-# #     first_page.clf()
-#         last_page.text(0.2,0.5,txt, transform=last_page.transFigure, size=24, ha="left" )
-#         self.plots_toSave.append(last_page)
-#         plt.close()
-        
-    # def create_download_link(self,val, filename):
-    #     b64 = base64.b64encode(val)  # val looks like b'...'
-    #     # pdf_display = f'<iframe src="data:application/pdf;base64,{b64.decode()}" width="850" height="700" type="application/pdf"></iframe>'
-    #     # return pdf_display
-        
-    #     return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}">Download file</a>'
     
     def create_download_link(self,val, filename,button_text):
         button_uuid = str(uuid.uuid4()).replace("-", "")
@@ -603,15 +499,12 @@ class PlotNSave:
                 }}
         </style> """
         b64 = base64.b64encode(val)  # val looks like b'...'
-        # pdf_display = f'<iframe src="data:application/pdf;base64,{b64.decode()}" width="850" height="700" type="application/pdf"></iframe>'
-        # return pdf_display
         dl_link = (
         custom_css
         + f'<a download="{filename}" id="{button_id}" href="data:application/octet-stream;base64,{b64.decode()}">{button_text}</a><br><br>'
         )
         return dl_link
         
-        # return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}">Download file</a>'
         
     def save_multi_plots(self,filename_toSave):
         """
@@ -625,19 +518,6 @@ class PlotNSave:
                     pdf.image(tmpfile.name)
         html = self.create_download_link(pdf.output(dest="S").encode("latin-1"), filename_toSave,"📥 Zoom-in Plot(.pdf)")
         st.markdown(html, unsafe_allow_html=True)
-        # st.st.markdown("### button")
-        # self.add_page(self.txt)
-        # pp = PdfPages(filename_toSave)
-        # for fig in self.plots_toSave:
-        #     fig.savefig(pp, format='pdf')
-        # with open(filename_toSave, "rb") as pdf_file:
-        #         PDFbyte = pdf_file.read()
-
-        # st.download_button(label="Export_Report",
-        #                     data=PDFbyte,
-        #                     file_name=filename_toSave,
-        #                     mime='application/octet-stream')
-        # pp.close()
 
     def plot_4_metrics_details(self,
                                plot_show:bool=True)->None:
@@ -685,7 +565,6 @@ class PlotNSave:
                         plot_show)
         
         #save multifigs
-        # if self.filename_toSave_details!="":
         print("------------------save button")
         self.save_multi_plots(self.filename_toSave_details)
         return None  
@@ -823,7 +702,6 @@ def upload_N_preview():
     input_df_rate=pd.DataFrame()
     st.markdown("### ✨ Upload & Preview ")
     with st.expander(""" *The uploaded file must use the same format as the provided sample file.""",expanded=True):
-        # ce, c1, ce, c2, ce = st.columns([0.01, 3, 0.07, 3, 0.07])
         c1, c2 = st.columns(2)
         with c1:
             st.markdown("##### Pressure Data")
@@ -881,7 +759,6 @@ def user_input_parameters(window_type:str, methods:str):
                         step=2,
                         help="""The number of points for observation for both left side and right side. Smaller number preferred when the distribution of the data points is very sparse.""",
                     )
-            # time_halfWindow=None
         if window_type=="Time Window":
             time_halfWindow = st.number_input(
                         "Time Window (hr)",
@@ -891,7 +768,6 @@ def user_input_parameters(window_type:str, methods:str):
                         step=0.1,
                         help="""The time interval of points for observation for both left side and right side. Should be smaller than the shortest time interval of transient.""",
                     )
-            # point_halfWindow=None
             
         if methods=="DeltaTangent":
             polynomial_order = st.number_input(
@@ -1070,7 +946,7 @@ def plot_task1_N_task2(colum_names,parameters,buildup,drawdown,pressure_df,rate_
                             "Breakpoints in Flowing Period":flowingTransient_object.points_inFlowTransient})
    
 
-    # output=parameters.copy()
+
     output={key:value for key,value in parameters.items() if value is not None}
     del output["rows_detailPlot"]
     output.update({"Number of Shut-in":len(transients.shutInperiods),
@@ -1080,13 +956,11 @@ def plot_task1_N_task2(colum_names,parameters,buildup,drawdown,pressure_df,rate_
                             "Shut-in Periods":transients.shutInperiods,
                             "Flowing Period & Breakpoints in Flowing":all_flowing})
     
-    # output_df=pd.DataFrame(output, index=[0])
+
     output_df=pd.DataFrame()
     output_df=output_df.append(output,ignore_index=True)
-    # output_df=output_df.append({"Shut-in Periods":transients.shutInperiods},ignore_index=True)
-    # output_df=output_df.append({"Flowing Period & Breakpoints in Flowing":all_flowing},ignore_index=True)
     print("output_df",output_df)
-    # display(output_df)
+
     
     
     st.markdown("##### 1. Parameters & Detected results")
