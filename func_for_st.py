@@ -811,7 +811,7 @@ def user_input_parameters(window_type:str, methods:str):
                 )
         
         minor_threshold_shutIn = st.number_input(
-                    "Minor Shut-in Threshold",
+                    "Shut-in detection Threshold",
                     value=0.020,
                     min_value=0.000,
                     max_value=10.000,
@@ -821,7 +821,7 @@ def user_input_parameters(window_type:str, methods:str):
                 )
         
         minor_threshold_Flowing = st.number_input(
-                    "Minor Flowing Threshold",
+                    "Multi-rate detection Threshold",
                     value=0.020,
                     min_value=0.000,
                     max_value=10.000,
