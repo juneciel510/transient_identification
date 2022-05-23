@@ -16,6 +16,12 @@ import bisect
 
 
 class ExtractPoints_inWindow:
+    """
+    extract points in time window or point window
+    Args:
+        mode: set to be "extractOriginData" when want to extract orginal points data 
+              set to be "forPatternRecognition" when use it in PatternRecognition class
+    """
     def __init__(self,
                  coordinate_names:List[str]
                  =["pressure_time","pressure_measure"],
@@ -116,15 +122,16 @@ class ExtractPoints_inWindow:
             xCoordinate: pressure time for the whole dataset
             points: a list contains index of points 
             time_halfWindow: half timewindow
+            min_pointsNumber: minimum number of points if the time window  contains less points than 'min_pointsNumber'  
             
         Returns:
-            a dataframe containing five columns, each row for a point
+            a dictionary, a example of keys() is as follows:
             -------------
-            columns=['point_index',
-                    'pressure_time_left', 
-                    'pressure_measure_left',
-                    'pressure_time_right', 
-                    'pressure_measure_right']
+            ['point_index',
+            'pressure_time_left', 
+            'pressure_measure_left',
+            'pressure_time_right', 
+            'pressure_measure_right']
             -------------
         """     
         #convert timewindow to point window 
@@ -206,6 +213,24 @@ class ExtractPoints_inWindow:
                                 time_halfWindow:float=None,
                                 point_halfWindow:int=None,
                                 min_pointsNumber:int=8)->pd.DataFrame:
+        """
+         Args: 
+            yCoordinate: values of y coordinates
+            xCoordinate: values of x coordinates
+            points: list of point indices for extraction
+            time_halfWindow: set to be None if use point window
+            point_halfWindow: set to be None if use time window
+            min_pointsNumber: minimum number of points if the time window  contains less points than 'min_pointsNumber'  
+        Returns:
+            data frame, a example of columns name
+            ------------------
+            ['point_index',
+            'pressure_time_left', 
+            'pressure_measure_left',
+            'pressure_time_right', 
+            'pressure_measure_right']
+            --------------------- 
+        """
         data_inWindow=pd.DataFrame(columns=['point_index',
                                 f"{self.coordinate_names[0]}_left", 
                                 f"{self.coordinate_names[1]}_left",

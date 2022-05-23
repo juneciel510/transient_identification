@@ -35,12 +35,13 @@ def log_func_wrapper(x,a,b,c,d):
 
 class CurveParametersCalc(ExtractPoints_inWindow):
     """
-    A class to learn pattern from ground_truth of PDG pressure data.
-    And predict the buildUp and drawDown points for a given dataset.
+    A class to fit curves and calculate parameters for the fitted curves.
     Args:
-    Returns:
+        pattern_names: buildup pattern or drawdown pattern
+        breakpoints_forLearn: the points for fitting curves
+    
     """
-    def __init__(self,mode:str="forPatternRecognition"):
+    def __init__(self,mode:str="forPatternRecognition")->None:
         ExtractPoints_inWindow.__init__(self,
                                      coordinate_names=["pressure_time","pressure_measure"],
                                      mode=mode)
@@ -115,6 +116,8 @@ class CurveParametersCalc(ExtractPoints_inWindow):
         Args: 
             data_inWindow: data in window
             fitting_type: the type of fitting function
+            polynomial_order: the order for polynomial fitting
+            show_plot: set to True if you want to plot all these fitted curves.
         Returns:
             dataframe containing 3 columns
             -------
@@ -163,7 +166,10 @@ class CurveParametersCalc(ExtractPoints_inWindow):
             pressure_measure: pressure measure for the whole dataset
             pressure_time: pressure time for the whole dataset
             ground_truth: a list contains index of break points 
-            fitting_type: the type for the fitting function            
+            fitting_type: the type for the fitting function    
+            time_halfWindow_forLearn: time half window for these ground truth
+            min_pointsNumber: minimum number of points if the time window  contains less points than 'min_pointsNumber'  
+            fitting_type: fitting type for the curve fitting
         Returns:
             None
         """
@@ -217,6 +223,9 @@ class CurveParametersCalc(ExtractPoints_inWindow):
             pressure_measure: pressure measure for the whole dataset
             pressure_time: pressure time for the whole dataset
             points: list of point indices for detection
+            time_halfWindow: set to be None if use point window
+            point_halfWindow: set to be None if use time window
+            min_pointsNumber: minimum number of points if the time window  contains less points than 'min_pointsNumber'  
         Returns:
             two lists: 
             one for "buildUp" point index, 

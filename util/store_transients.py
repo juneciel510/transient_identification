@@ -13,6 +13,19 @@ from tangent_method import TangentMethod
 # from extract_points import ExtractPoints_inWindow
 
 class StoreTransients(TangentMethod):
+    """
+    Find start points for shut-in & flowing periods, 
+    find buildup points in flowing periods
+    Args:
+        pressure dataframe: contain pressure measurements, time, first order derivative, second order derivative
+        minor_threshold_shutIn: threshold for remove minor periods
+        minor_threshold_Flowing: threshold for remove minor transient in flowing periods
+        points_buildUp: detected buildup points
+        points_drawDown: detected drawdown points
+        colum_names: column names for pressure dataframe
+        mode: when deciding the start points for shut-in, use the maximum derivative as the criterion
+        
+    """
     def __init__(self, 
                  pressure_df:pd.DataFrame,
                  minor_threshold_shutIn:float,
@@ -25,9 +38,8 @@ class StoreTransients(TangentMethod):
                                  "first_order_derivative":"first_order_derivative",
                                  "second_order_derivative":"second_order_derivative"},
                     "rate":{"time":"Elapsed time","measure":"Liquid rate"}},
-                   mode:str="Derivative",
-                   time_halfWindow:float=None,
-                    point_halfWindow:int=10)->None:
+                   mode:str="Derivative"
+                   )->None:
         TangentMethod.__init__(self)
         self.pressure_df=pressure_df 
         self.colum_names=colum_names
@@ -37,7 +49,6 @@ class StoreTransients(TangentMethod):
         self.points_drawDown=points_drawDown
         self.mode=mode
         self.std_pressure=statistics.stdev(self.pressure_measure)
-        # print("self.std_pressure",self.std_pressure)
         self.pressure_max=max(pressure_df[colum_names["pressure"]["measure"]])
         self.pressure_min=min(pressure_df[colum_names["pressure"]["measure"]])
         self.major_drawDown=None
@@ -55,9 +66,7 @@ class StoreTransients(TangentMethod):
         else:
             print("No points_buildUp or points_drawDown detected" )
             
-    
-    
-         
+            
         
     def find_shutInPeriods(self)->List[Tuple[int,int]]:
         #copy self.points_drawDown list

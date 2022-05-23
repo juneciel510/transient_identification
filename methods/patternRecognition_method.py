@@ -25,12 +25,10 @@ class PatternRecognitionMethod(CurveParametersCalc,SaveNLoad):
     A class to learn pattern from ground_truth of PDG pressure data.
     And predict the buildUp and drawDown points for a given dataset.
     Args:
-    Returns:
+    
     """
     
     def __init__(self, 
-                #  time_halfWindow_forPredict:float=0.5,
-                #  time_halfWindow_forLearn:float=1,
                  min_pointsNumber:int=8,
                 percentile_tuning={
                                     "buildUp":{"left":[90,10],

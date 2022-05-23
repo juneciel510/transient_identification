@@ -30,6 +30,19 @@ colum_names   ={"pressure":{"time":"Elapsed time(hr)",
 
 # adjust LoadNPreprocessData class to the app.py
 class LoadNPreprocessData:
+    """
+    Read pressure and flow rate data from txt or xlsx file and produce pressure dataframe and flow rate dataframe
+    Preprocessing includes derivative calculation and denoising.
+    Args:
+        pressure_filePath: file path to load pressure data
+        rate_filePath: file path to load flow rate data
+        colum_names: the column names for the produced pressure & rate dataframe
+        skip_rows: the number of rows to skip when reading from txt file 
+        sheet_name: sheet names for xlxs file if read from xlsx file
+        use_SG_smoothing: set False if denoising is not needed
+        window_length: window length for SG smoothing
+        polyorder: polynomial order for SG smoothing
+    """
     def __init__(self,
                  pressure_df:pd.DataFrame=pd.DataFrame(), 
                  rate_df:pd.DataFrame=pd.DataFrame(), 
@@ -697,7 +710,7 @@ def download_button(object_to_download, download_filename, button_text):
     st.markdown(dl_link, unsafe_allow_html=True)
     
     
-def upload_N_preview():
+def upload_N_preview()->(pd.DataFrame,pd.DataFrame):
     input_df_pressure=pd.DataFrame()
     input_df_rate=pd.DataFrame()
     st.markdown("### ✨ Upload & Preview ")
@@ -746,7 +759,7 @@ def upload_N_preview():
     return input_df_pressure, input_df_rate
 
 
-def user_input_parameters(window_type:str, methods:str):
+def user_input_parameters(window_type:str, methods:str)->Dict[str,float]:
     c1, c2 = st.columns(2)
     with c2:
           

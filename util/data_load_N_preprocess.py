@@ -12,14 +12,14 @@ class LoadNPreprocessData:
     Read pressure and flow rate data from txt or xlsx file and produce pressure dataframe and flow rate dataframe
     Preprocessing includes derivative calculation and denoising.
     Args:
-    pressure_filePath: file path to load pressure data
-    rate_filePath: file path to load flow rate data
-    colum_names: the column names for the produced pressure & rate dataframe
-    skip_rows: the number of rows to skip when reading from txt file 
-    sheet_name: sheet names for xlxs file if read from xlsx file
-    use_SG_smoothing: set False if denoising is not needed
-    window_length: window length for SG smoothing
-    polyorder: polynomial order for SG smoothing
+        pressure_filePath: file path to load pressure data
+        rate_filePath: file path to load flow rate data
+        colum_names: the column names for the produced pressure & rate dataframe
+        skip_rows: the number of rows to skip when reading from txt file 
+        sheet_name: sheet names for xlxs file if read from xlsx file
+        use_SG_smoothing: set False if denoising is not needed
+        window_length: window length for SG smoothing
+        polyorder: polynomial order for SG smoothing
     """
     def __init__(self,
                  pressure_filePath:str, 
