@@ -29,3 +29,5 @@ experiments_jupyterNotebook/2_PatternRecognition_AvgDerivative_FFOD-Copy1.ipynb
 patterns.docx
 ~$tterns.docx
 
+.dockerignore
+Dockerfile
