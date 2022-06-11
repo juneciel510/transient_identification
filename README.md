@@ -17,8 +17,8 @@
 ### Propose a learning & predicting procedure for method `Pattern recogntion`
 
 ### Deploy web app
-`Deployed App:` [Click here](https://share.streamlit.io/juneciel510/transient_identification/main/app.py)
+[Click here](https://share.streamlit.io/juneciel510/transient_identification/main/app.py)
 
 ### Poster to introduce project 
-`Poster:` [Click here](https://github.com/juneciel510/transient_identification/blob/main/poster_LejunChen1.pdf)
+[Click here](https://github.com/juneciel510/transient_identification/blob/main/poster_LejunChen1.pdf)
 
