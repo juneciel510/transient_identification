@@ -5,7 +5,7 @@
 ### Develope three methods
 - Method based on tangent 
 - Method based on derivatives 
-- Pattern recogntion
+- Pattern recognition
 
 ### Design a 5-steps workflow
 - Denoising
@@ -14,7 +14,7 @@
 - Task 1 processing
 - Task 2 processing
   
-### Propose a learning & predicting procedure for method `Pattern recogntion`
+### Propose a learning & predicting procedure for method `Pattern recognition`
 
 ### Deploy web app
 [Click here](https://share.streamlit.io/juneciel510/transient_identification/main/app.py)
