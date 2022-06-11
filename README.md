@@ -1,1 +1,1 @@
-`Deployed App:` [Click here](https://share.streamlit.io/juneciel510/project_ongoing/main/app.py)
+`Deployed App:` [Click here](https://share.streamlit.io/juneciel510/transient_identification/main/app.py)
