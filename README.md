@@ -1,8 +1,8 @@
 # Transient identification and interpretation of real-time pressure data from modern well surveillance systems
 
-## outcomes
 
-### Develope three methods:
+
+### Develope three methods
 - Method based on tangent 
 - Method based on derivatives 
 - Pattern recogntion
