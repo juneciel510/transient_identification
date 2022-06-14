@@ -32,9 +32,9 @@
 
 <hr />
 
-<a id="note1" href="#note1ref"><sup>1</sup></a>To detect the start points for shut-in & flowing periods.
+<a id="note1" href="#note1ref"><sup>1</sup></a>Task 1: To detect the start points for shut-in & flowing periods.
 
-<a id="note2" href="#note2ref"><sup>2</sup></a>Task 1 + detection of multi-rate break points in flowing periods
+<a id="note2" href="#note2ref"><sup>2</sup></a>Task 2: Task 1 + detection of multi-rate break points in flowing periods
 
 <a id="note3" href="#note3ref"><sup>3</sup></a>A. Shchipanov, L. Kollbotn, R. Berenblyum. (2017). Integrating Pressure Transient Analysis into History Matching.
 79th EAGE Conference & Exhibition. Paris, France, 12-15 June. doi.org/10.3997/2214-4609.201700995
