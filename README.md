@@ -2,7 +2,7 @@
 
 
 
-### Develope three methods
+### Develop three methods
 - Method based on tangent 
 - Method based on derivatives 
 - Pattern recognition
